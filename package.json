@@ -1,0 +1,43 @@
+{
+  "name": "automation-marketplace",
+  "version": "1.0.0",
+  "description": "Modern workflow automation platform with event-driven architecture",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "api",
+    "orchestrator",
+    "workers/nodejs",
+    "messaging"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\" \"npm run dev:orchestrator\" \"npm run dev:workers\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:orchestrator": "cd orchestrator && npm run dev",
+    "dev:workers": "cd workers/nodejs && npm run dev",
+    "build": "npm run build:frontend && npm run build:api && npm run build:orchestrator && npm run build:workers",
+    "build:frontend": "cd frontend && npm run build",
+    "build:api": "cd api && npm run build",
+    "build:orchestrator": "cd orchestrator && npm run build",
+    "build:workers": "cd workers/nodejs && npm run build",
+    "test": "npm run test:api && npm run test:frontend && npm run test:orchestrator",
+    "test:api": "cd api && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "test:orchestrator": "cd orchestrator && npm test",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "migrate": "cd db && npm run migrate",
+    "seed": "cd db && npm run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "@types/node": "^20.5.0",
+    "typescript": "^5.1.6"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

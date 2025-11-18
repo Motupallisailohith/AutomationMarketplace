@@ -1,0 +1,78 @@
+[package]
+name = "automation-rust-worker"
+version = "1.0.0"
+edition = "2021"
+description = "High-performance compute and binary data processing worker"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.32", features = ["full"] }
+tokio-stream = "0.1"
+
+# Temporal SDK
+temporal-sdk = "0.1.0"
+temporal-sdk-core = "0.1.0"
+
+# Data processing
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+csv = "1.2"
+arrow = "47.0"
+polars = { version = "0.32", features = ["lazy", "streaming"] }
+rayon = "1.7"
+
+# Kafka integration
+rdkafka = { version = "0.34", features = ["cmake-build", "ssl-vendored"] }
+
+# Redis integration
+redis = { version = "0.23", features = ["tokio-comp"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "stream", "multipart"] }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-jaeger = "0.1"
+metrics = "0.21"
+metrics-prometheus = "0.6"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Configuration
+config = "0.13"
+dotenvy = "0.15"
+
+# Utilities
+uuid = { version = "1.4", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+bytes = "1.4"
+futures = "0.3"
+
+# Compression/Decompression
+flate2 = "1.0"
+lz4_flex = "0.11"
+zstd = "0.13"
+
+# Image processing
+image = "0.24"
+imageproc = "0.23"
+
+# File format support
+zip = "0.6"
+tar = "0.4"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "data_processing"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

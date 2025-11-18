@@ -1,0 +1,626 @@
+// Database service for workflow management
+import { Pool } from 'pg';
+import { logger } from '../shared/logger';
+
+interface DatabaseConfig {
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password: string;
+  ssl?: boolean;
+  maxConnections?: number;
+}
+
+interface WorkflowRecord {
+  id: string;
+  name: string;
+  description?: string;
+  definition: any;
+  is_active: boolean;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface TriggerRecord {
+  id: string;
+  workflow_id: string;
+  type: string;
+  configuration: any;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface ExecutionRecord {
+  id: string;
+  workflow_id: string;
+  trigger_id?: string;
+  temporal_run_id: string;
+  status: string;
+  input_data?: any;
+  output_data?: any;
+  error_message?: string;
+  started_at: Date;
+  completed_at?: Date;
+  duration_ms?: number;
+}
+
+interface CredentialRecord {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  description?: string;
+  encrypted_data: string;
+  iv: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export class DatabaseService {
+  private pool: Pool;
+
+  constructor(config?: Partial<DatabaseConfig>) {
+    const dbConfig: DatabaseConfig = {
+      host: config?.host || process.env.DB_HOST || 'localhost',
+      port: config?.port || parseInt(process.env.DB_PORT || '5432'),
+      database: config?.database || process.env.DB_NAME || 'automation_platform',
+      username: config?.username || process.env.DB_USER || 'postgres',
+      password: config?.password || process.env.DB_PASSWORD || 'password',
+      ssl: config?.ssl || process.env.DB_SSL === 'true',
+      maxConnections: config?.maxConnections || 20,
+    };
+
+    this.pool = new Pool({
+      host: dbConfig.host,
+      port: dbConfig.port,
+      database: dbConfig.database,
+      user: dbConfig.username,
+      password: dbConfig.password,
+      ssl: dbConfig.ssl ? { rejectUnauthorized: false } : false,
+      max: dbConfig.maxConnections,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+
+    this.pool.on('error', (err) => {
+      logger.error('Database pool error:', { error: err.message });
+    });
+  }
+
+  async connect(): Promise<void> {
+    try {
+      const client = await this.pool.connect();
+      client.release();
+      logger.info('Database connected successfully');
+      
+      // Initialize database tables
+      await this.initializeDatabase();
+    } catch (error: any) {
+      logger.error('Failed to connect to database:', { error: error?.message || error });
+      throw error;
+    }
+  }
+
+  async initializeDatabase() {
+    try {
+      // Create tables if they don't exist
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS workflows (
+          id UUID PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          definition JSONB NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          created_by UUID NOT NULL
+        );
+      `);
+
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS triggers (
+          id UUID PRIMARY KEY,
+          workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+          type VARCHAR(50) NOT NULL,
+          configuration JSONB NOT NULL,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS executions (
+          id UUID PRIMARY KEY,
+          workflow_id UUID NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+          trigger_id UUID REFERENCES triggers(id) ON DELETE SET NULL,
+          temporal_run_id VARCHAR(255) NOT NULL,
+          status VARCHAR(50) DEFAULT 'running',
+          input_data JSONB,
+          output_data JSONB,
+          error_message TEXT,
+          started_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          completed_at TIMESTAMP WITH TIME ZONE,
+          duration_ms INTEGER
+        );
+      `);
+
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          first_name VARCHAR(100),
+          last_name VARCHAR(100),
+          role VARCHAR(50) DEFAULT 'user',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          last_login_at TIMESTAMP WITH TIME ZONE
+        );
+      `);
+
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          token_hash VARCHAR(255) NOT NULL,
+          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          is_revoked BOOLEAN DEFAULT false
+        );
+      `);
+
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS credentials (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          type VARCHAR(100) NOT NULL,
+          description TEXT,
+          encrypted_data TEXT NOT NULL,
+          iv VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, name)
+        );
+      `);
+
+      // Create indexes for better performance
+      await this.pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_workflows_created_by ON workflows(created_by);
+        CREATE INDEX IF NOT EXISTS idx_workflows_is_active ON workflows(is_active);
+        CREATE INDEX IF NOT EXISTS idx_triggers_workflow_id ON triggers(workflow_id);
+        CREATE INDEX IF NOT EXISTS idx_triggers_type ON triggers(type);
+        CREATE INDEX IF NOT EXISTS idx_executions_workflow_id ON executions(workflow_id);
+        CREATE INDEX IF NOT EXISTS idx_executions_status ON executions(status);
+        CREATE INDEX IF NOT EXISTS idx_executions_started_at ON executions(started_at);
+        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+        CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+        CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_credentials_user_id ON credentials(user_id);
+        CREATE INDEX IF NOT EXISTS idx_credentials_type ON credentials(type);
+      `);
+
+      logger.info('Database tables initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize database tables:', error);
+      throw error;
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    try {
+      await this.pool.end();
+      logger.info('Database disconnected');
+    } catch (error: any) {
+      logger.error('Failed to disconnect from database:', { error: error?.message || error });
+    }
+  }
+
+  // Workflow operations
+  async createWorkflow(workflow: {
+    id: string;
+    name: string;
+    description?: string;
+    definition: any;
+    createdBy: string;
+  }): Promise<WorkflowRecord> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `INSERT INTO workflows (id, name, description, definition, is_active, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+         RETURNING *`,
+        [workflow.id, workflow.name, workflow.description, JSON.stringify(workflow.definition), true, workflow.createdBy]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getWorkflow(id: string): Promise<WorkflowRecord | null> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query('SELECT * FROM workflows WHERE id = $1', [id]);
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateWorkflow(id: string, updates: Partial<WorkflowRecord>): Promise<WorkflowRecord> {
+    const client = await this.pool.connect();
+    try {
+      const setClause = Object.keys(updates)
+        .map((key, index) => `${key} = $${index + 2}`)
+        .join(', ');
+      
+      const values = [id, ...Object.values(updates)];
+      
+      const result = await client.query(
+        `UPDATE workflows SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+        values
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getWorkflows(userId?: string): Promise<WorkflowRecord[]> {
+    const client = await this.pool.connect();
+    try {
+      const query = userId 
+        ? 'SELECT * FROM workflows WHERE created_by = $1 ORDER BY created_at DESC'
+        : 'SELECT * FROM workflows ORDER BY created_at DESC';
+      const values = userId ? [userId] : [];
+      
+      const result = await client.query(query, values);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Trigger operations
+  async createTrigger(trigger: {
+    id: string;
+    workflowId: string;
+    type: string;
+    configuration: any;
+    isActive?: boolean;
+  }): Promise<TriggerRecord> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `INSERT INTO triggers (id, workflow_id, type, configuration, is_active, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING *`,
+        [trigger.id, trigger.workflowId, trigger.type, JSON.stringify(trigger.configuration), trigger.isActive ?? true]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getTriggers(workflowId: string): Promise<TriggerRecord[]> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM triggers WHERE workflow_id = $1 ORDER BY created_at ASC',
+        [workflowId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getTrigger(id: string): Promise<TriggerRecord | null> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query('SELECT * FROM triggers WHERE id = $1', [id]);
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateTrigger(id: string, updates: Partial<TriggerRecord>): Promise<TriggerRecord> {
+    const client = await this.pool.connect();
+    try {
+      const setClause = Object.keys(updates)
+        .map((key, index) => `${key} = $${index + 2}`)
+        .join(', ');
+      
+      const values = [id, ...Object.values(updates)];
+      
+      const result = await client.query(
+        `UPDATE triggers SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+        values
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  // Execution operations
+  async createExecution(execution: {
+    id: string;
+    workflowId: string;
+    triggerId?: string;
+    temporalRunId: string;
+    inputData?: any;
+  }): Promise<ExecutionRecord> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `INSERT INTO workflow_executions (id, workflow_id, trigger_id, temporal_run_id, status, input_data, started_at)
+         VALUES ($1, $2, $3, $4, 'running', $5, NOW())
+         RETURNING *`,
+        [execution.id, execution.workflowId, execution.triggerId, execution.temporalRunId, JSON.stringify(execution.inputData)]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateExecution(id: string, updates: {
+    status?: string;
+    outputData?: any;
+    errorMessage?: string;
+    completedAt?: Date;
+    durationMs?: number;
+  }): Promise<ExecutionRecord> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `UPDATE workflow_executions 
+         SET status = COALESCE($2, status),
+             output_data = COALESCE($3, output_data),
+             error_message = COALESCE($4, error_message),
+             completed_at = COALESCE($5, completed_at),
+             duration_ms = COALESCE($6, duration_ms)
+         WHERE id = $1 
+         RETURNING *`,
+        [
+          id, 
+          updates.status, 
+          updates.outputData ? JSON.stringify(updates.outputData) : null,
+          updates.errorMessage,
+          updates.completedAt,
+          updates.durationMs
+        ]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getExecution(id: string): Promise<ExecutionRecord | null> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query('SELECT * FROM workflow_executions WHERE id = $1', [id]);
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getExecutions(workflowId?: string, limit = 50): Promise<ExecutionRecord[]> {
+    const client = await this.pool.connect();
+    try {
+      const query = workflowId 
+        ? 'SELECT * FROM workflow_executions WHERE workflow_id = $1 ORDER BY started_at DESC LIMIT $2'
+        : 'SELECT * FROM workflow_executions ORDER BY started_at DESC LIMIT $1';
+      const values = workflowId ? [workflowId, limit] : [limit];
+      
+      const result = await client.query(query, values);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  // Health check
+  async healthCheck(): Promise<boolean> {
+    try {
+      const client = await this.pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      return true;
+    } catch (error: any) {
+      logger.error('Database health check failed:', { error: error?.message || error });
+      return false;
+    }
+  }
+
+  // Credential operations
+  async createCredential(credential: {
+    id: string;
+    name: string;
+    type: string;
+    description?: string;
+    encryptedData: string;
+    iv: string;
+    userId: string;
+  }): Promise<CredentialRecord> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `INSERT INTO credentials (id, user_id, name, type, description, encrypted_data, iv, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+         RETURNING *`,
+        [
+          credential.id,
+          credential.userId,
+          credential.name,
+          credential.type,
+          credential.description,
+          credential.encryptedData,
+          credential.iv
+        ]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getCredentials(userId: string): Promise<CredentialRecord[]> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM credentials WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getCredential(id: string): Promise<CredentialRecord | null> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query('SELECT * FROM credentials WHERE id = $1', [id]);
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateCredential(id: string, updates: Partial<CredentialRecord>): Promise<CredentialRecord> {
+    const client = await this.pool.connect();
+    try {
+      const setClause = Object.keys(updates)
+        .map((key, index) => `${key} = $${index + 2}`)
+        .join(', ');
+      
+      const values = [id, ...Object.values(updates)];
+      
+      const result = await client.query(
+        `UPDATE credentials SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+        values
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async deleteCredential(id: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('DELETE FROM credentials WHERE id = $1', [id]);
+    } finally {
+      client.release();
+    }
+  }
+
+  // Fix trigger operations to use correct table name
+  async deleteTrigger(id: string): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('DELETE FROM triggers WHERE id = $1', [id]);
+    } finally {
+      client.release();
+    }
+  }
+
+  // User management methods
+  async getUserById(id: string): Promise<User | null> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login_at FROM users WHERE id = $1',
+        [id]
+      );
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async updateUser(id: string, updates: Partial<{
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    isActive: boolean;
+  }>): Promise<User> {
+    const client = await this.pool.connect();
+    try {
+      const fields = [];
+      const values = [id];
+      let paramCount = 2;
+
+      if (updates.email) {
+        fields.push(`email = $${paramCount}`);
+        values.push(updates.email.toLowerCase());
+        paramCount++;
+      }
+      if (updates.firstName) {
+        fields.push(`first_name = $${paramCount}`);
+        values.push(updates.firstName);
+        paramCount++;
+      }
+      if (updates.lastName) {
+        fields.push(`last_name = $${paramCount}`);
+        values.push(updates.lastName);
+        paramCount++;
+      }
+      if (updates.role) {
+        fields.push(`role = $${paramCount}`);
+        values.push(updates.role);
+        paramCount++;
+      }
+      if (updates.isActive !== undefined) {
+        fields.push(`is_active = $${paramCount}`);
+        values.push(updates.isActive.toString());
+        paramCount++;
+      }
+
+      if (fields.length === 0) {
+        throw new Error('No fields to update');
+      }
+
+      fields.push('updated_at = NOW()');
+
+      const result = await client.query(
+        `UPDATE users SET ${fields.join(', ')} WHERE id = $1 
+         RETURNING id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login_at`,
+        values
+      );
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+}
+
+// User interface for consistency
+export interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+  last_login_at?: Date;
+}
+
+// Singleton instance
+export const databaseService = new DatabaseService();
