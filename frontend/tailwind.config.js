@@ -1,0 +1,160 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // n8n Design System - Using CSS Custom Properties
+        primary: {
+          DEFAULT: 'var(--color--primary)',
+          shade: 'var(--color--primary--shade-1)',
+          tint1: 'var(--color--primary--tint-1)',
+          tint2: 'var(--color--primary--tint-2)',
+          tint3: 'var(--color--primary--tint-3)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color--secondary)',
+          shade: 'var(--color--secondary--shade-1)',
+          tint1: 'var(--color--secondary--tint-1)',
+          tint2: 'var(--color--secondary--tint-2)',
+        },
+        success: {
+          DEFAULT: 'var(--color--success)',
+          shade: 'var(--color--success--shade-1)',
+          tint1: 'var(--color--success--tint-1)',
+          tint2: 'var(--color--success--tint-2)',
+          tint3: 'var(--color--success--tint-3)',
+          tint4: 'var(--color--success--tint-4)',
+        },
+        warning: {
+          DEFAULT: 'var(--color--warning)',
+          shade: 'var(--color--warning--shade-1)',
+          tint1: 'var(--color--warning--tint-1)',
+          tint2: 'var(--color--warning--tint-2)',
+        },
+        danger: {
+          DEFAULT: 'var(--color--danger)',
+          shade: 'var(--color--danger--shade-1)',
+          tint1: 'var(--color--danger--tint-1)',
+          tint2: 'var(--color--danger--tint-2)',
+          tint3: 'var(--color--danger--tint-3)',
+          tint4: 'var(--color--danger--tint-4)',
+        },
+        info: {
+          DEFAULT: 'var(--color--info)',
+          shade: 'var(--color--info--shade-1)',
+          tint1: 'var(--color--info--tint-1)',
+          tint2: 'var(--color--info--tint-2)',
+          tint3: 'var(--color--info--tint-3)',
+        },
+        text: {
+          shade1: 'var(--color--text--shade-1)',
+          DEFAULT: 'var(--color--text)',
+          tint1: 'var(--color--text--tint-1)',
+          tint2: 'var(--color--text--tint-2)',
+          tint3: 'var(--color--text--tint-3)',
+          danger: 'var(--color--text--danger)',
+        },
+        foreground: {
+          shade2: 'var(--color--foreground--shade-2)',
+          shade1: 'var(--color--foreground--shade-1)',
+          DEFAULT: 'var(--color--foreground)',
+          tint1: 'var(--color--foreground--tint-1)',
+          tint2: 'var(--color--foreground--tint-2)',
+        },
+        background: {
+          shade2: 'var(--color--background--shade-2)',
+          shade1: 'var(--color--background--shade-1)',
+          DEFAULT: 'var(--color--background)',
+          light1: 'var(--color--background--light-1)',
+          light2: 'var(--color--background--light-2)',
+          light3: 'var(--color--background--light-3)',
+        },
+      },
+      fontFamily: {
+        sans: 'var(--font-family)',
+        mono: 'var(--font-family--monospace)',
+      },
+      fontSize: {
+        '4xs': 'var(--font-size--4xs)',
+        '3xs': 'var(--font-size--3xs)',
+        '2xs': 'var(--font-size--2xs)',
+        'xs': 'var(--font-size--xs)',
+        'sm': 'var(--font-size--sm)',
+        'base': 'var(--font-size--md)',
+        'lg': 'var(--font-size--lg)',
+        'xl': 'var(--font-size--xl)',
+        '2xl': 'var(--font-size--2xl)',
+      },
+      fontWeight: {
+        regular: 'var(--font-weight--regular)',
+        medium: 'var(--font-weight--medium)',
+        bold: 'var(--font-weight--bold)',
+      },
+      spacing: {
+        '5xs': 'var(--spacing--5xs)',
+        '4xs': 'var(--spacing--4xs)',
+        '3xs': 'var(--spacing--3xs)',
+        '2xs': 'var(--spacing--2xs)',
+        'xs': 'var(--spacing--xs)',
+        'sm': 'var(--spacing--sm)',
+        'md': 'var(--spacing--md)',
+        'lg': 'var(--spacing--lg)',
+        'xl': 'var(--spacing--xl)',
+        '2xl': 'var(--spacing--2xl)',
+        '3xl': 'var(--spacing--3xl)',
+        '4xl': 'var(--spacing--4xl)',
+        '5xl': 'var(--spacing--5xl)',
+      },
+      borderRadius: {
+        'xl': 'var(--radius--xl)',
+        'lg': 'var(--radius--lg)',
+        DEFAULT: 'var(--radius)',
+        'sm': 'var(--radius--sm)',
+      },
+      boxShadow: {
+        DEFAULT: 'var(--shadow)',
+        'dark': 'var(--shadow--dark)',
+        'light': 'var(--shadow--light)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-in-out',
+        'fade-out': 'fadeOut 0.2s ease-in-out',
+        'slide-in': 'slideIn 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
+        'slide-out': 'slideOut 0.3s cubic-bezier(0.19, 1, 0.22, 1)',
+        'scale-in': 'scaleIn 0.2s ease-out',
+        'pulse-subtle': 'pulseSubtle 2s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeOut: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateX(-100px)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideOut: {
+          '0%': { transform: 'translateX(0)', opacity: '1' },
+          '100%': { transform: 'translateX(-100px)', opacity: '0' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.8' },
+        },
+      },
+    },
+  },
+  plugins: [],
+}

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"automation-platform/orchestrator-go/internal/database"
-	"automation-platform/orchestrator-go/internal/types"
+	"automation-marketplace/orchestrator-go/internal/database"
+	"automation-marketplace/orchestrator-go/internal/types"
 	"go.temporal.io/sdk/activity"
 	"go.uber.org/zap"
 )

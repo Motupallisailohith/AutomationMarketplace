@@ -1,0 +1,25 @@
+{
+  "name": "sample-hello-extension",
+  "displayName": "Hello World Extension",
+  "description": "A sample extension that demonstrates the extension SDK",
+  "publisher": "AutomationMarketplace",
+  "version": "1.0.0",
+  "categories": ["Sample", "Developer Tools"],
+  "entry": {
+    "backend": "backend.js",
+    "frontend": "frontend.js"
+  },
+  "minSDKVersion": "0.9.0",
+  "permissions": {
+    "frontend": ["router", "components"],
+    "backend": ["api", "events"]
+  },
+  "events": ["workflow.executed", "node.created"],
+  "extends": {
+    "views": {
+      "workflows": {
+        "header": "WorkflowHeaderComponent"
+      }
+    }
+  }
+}

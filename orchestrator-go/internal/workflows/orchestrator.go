@@ -3,10 +3,12 @@ package workflows
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
-	"automation-platform/orchestrator-go/internal/models"
-	"automation-platform/orchestrator-go/internal/types"
+	"automation-marketplace/orchestrator-go/internal/expressions"
+	"automation-marketplace/orchestrator-go/internal/models"
+	"automation-marketplace/orchestrator-go/internal/types"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
@@ -80,6 +82,16 @@ func WorkflowOrchestrator(ctx workflow.Context, input types.WorkflowInput) (*typ
 		// Resolve input data for this step
 		stepInput := resolveStepInput(step, results)
 
+		// IMPORTANT: Resolve expressions BEFORE routing to workers
+		// This ensures all {{$json}}, {{$node()}}, {{$env}} expressions are resolved in Go
+		// Workers receive pre-resolved data
+		resolvedConfig, err := resolveExpressions(step.Configuration, results, stepInput)
+		if err != nil {
+			logger.Error("Failed to resolve expressions", "error", err, "stepId", step.ID)
+			// Continue with original config if resolution fails
+			resolvedConfig = step.Configuration
+		}
+
 		// Execute the step based on its type
 		activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 			StartToCloseTimeout: time.Minute * 10,
@@ -95,58 +107,109 @@ func WorkflowOrchestrator(ctx workflow.Context, input types.WorkflowInput) (*typ
 		var stepResult interface{}
 		var activityErr error
 
-		switch step.Type {
-		case "http_request", "api_call":
-			activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteHTTPActivity", types.ActivityInput{
-				StepID:        step.ID,
-				StepType:      step.Type,
-				Configuration: step.Configuration,
-				InputData:     stepInput,
-				ExecutionID:   input.ExecutionID,
-			}).Get(ctx, &stepResult)
+		// Check if this is a node-based step (has nodeType field)
+		nodeType, hasNodeType := step.Configuration["nodeType"].(string)
+		
+		if hasNodeType && nodeType != "" {
+			// Execute using Node.js worker (dynamic node execution)
+			logger.Info("Executing step as node", "nodeType", nodeType, "stepId", step.ID)
+			
+			// Convert stepInput to node input format (array of items)
+			nodeInputData := convertToNodeInputData(stepInput)
+			
+			// Extract credentials if present (from RESOLVED config)
+			credentials := make(map[string]string)
+			if creds, ok := resolvedConfig["credentials"].(map[string]interface{}); ok {
+				for k, v := range creds {
+					if vStr, ok := v.(string); ok {
+						credentials[k] = vStr
+					}
+				}
+			}
+			
+			// Execute on nodejs-worker-queue with RESOLVED parameters
+			nodeActivityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+				StartToCloseTimeout: time.Minute * 10,
+				TaskQueue:           "nodejs-worker-queue",
+				RetryPolicy: &temporal.RetryPolicy{
+					InitialInterval:    time.Second * 2,
+					BackoffCoefficient: 2.0,
+					MaximumInterval:    time.Minute * 5,
+					MaximumAttempts:    3,
+				},
+			})
+			
+			var nodeResult types.ExecuteNodeOutput
+			activityErr = workflow.ExecuteActivity(nodeActivityCtx, "executeNode", types.ExecuteNodeInput{
+				NodeType:    nodeType,
+				NodeVersion: getIntConfig(resolvedConfig, "nodeVersion", 1),
+				Parameters:  getMapConfig(resolvedConfig, "parameters"), // Pre-resolved parameters
+				InputData:   nodeInputData,
+				Credentials: credentials,
+				ExecutionID: input.ExecutionID,
+				WorkflowID:  input.WorkflowID,
+				NodeID:      step.ID,
+			}).Get(ctx, &nodeResult)
+			
+			if activityErr == nil {
+				stepResult = nodeResult.Data
+			}
+			
+		} else {
+			// Legacy activity execution (backward compatibility)
+			switch step.Type {
+			case "http_request", "api_call":
+				activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteHTTPActivity", types.ActivityInput{
+					StepID:        step.ID,
+					StepType:      step.Type,
+					Configuration: step.Configuration,
+					InputData:     stepInput,
+					ExecutionID:   input.ExecutionID,
+				}).Get(ctx, &stepResult)
 
-		case "data_processing", "transformation":
-			activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteDataProcessingActivity", types.ActivityInput{
-				StepID:        step.ID,
-				StepType:      step.Type,
-				Configuration: step.Configuration,
-				InputData:     stepInput,
-				ExecutionID:   input.ExecutionID,
-			}).Get(ctx, &stepResult)
+			case "data_processing", "transformation":
+				activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteDataProcessingActivity", types.ActivityInput{
+					StepID:        step.ID,
+					StepType:      step.Type,
+					Configuration: step.Configuration,
+					InputData:     stepInput,
+					ExecutionID:   input.ExecutionID,
+				}).Get(ctx, &stepResult)
 
-		case "ml_inference":
-			activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteMLActivity", types.ActivityInput{
-				StepID:        step.ID,
-				StepType:      step.Type,
-				Configuration: step.Configuration,
-				InputData:     stepInput,
-				ExecutionID:   input.ExecutionID,
-			}).Get(ctx, &stepResult)
+			case "ml_inference":
+				activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteMLActivity", types.ActivityInput{
+					StepID:        step.ID,
+					StepType:      step.Type,
+					Configuration: step.Configuration,
+					InputData:     stepInput,
+					ExecutionID:   input.ExecutionID,
+				}).Get(ctx, &stepResult)
 
-		case "conditional":
-			activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteConditionalActivity", types.ActivityInput{
-				StepID:        step.ID,
-				StepType:      step.Type,
-				Configuration: step.Configuration,
-				InputData:     stepInput,
-				ExecutionID:   input.ExecutionID,
-			}).Get(ctx, &stepResult)
+			case "conditional":
+				activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteConditionalActivity", types.ActivityInput{
+					StepID:        step.ID,
+					StepType:      step.Type,
+					Configuration: step.Configuration,
+					InputData:     stepInput,
+					ExecutionID:   input.ExecutionID,
+				}).Get(ctx, &stepResult)
 
-		case "notification":
-			activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteNotificationActivity", types.ActivityInput{
-				StepID:        step.ID,
-				StepType:      step.Type,
-				Configuration: step.Configuration,
-				InputData:     stepInput,
-				ExecutionID:   input.ExecutionID,
-			}).Get(ctx, &stepResult)
+			case "notification":
+				activityErr = workflow.ExecuteActivity(activityCtx, "ExecuteNotificationActivity", types.ActivityInput{
+					StepID:        step.ID,
+					StepType:      step.Type,
+					Configuration: step.Configuration,
+					InputData:     stepInput,
+					ExecutionID:   input.ExecutionID,
+				}).Get(ctx, &stepResult)
 
-		default:
-			logger.Warn("Unknown step type, skipping", "stepType", step.Type)
-			stepResult = map[string]interface{}{
-				"status":    "skipped",
-				"message":   fmt.Sprintf("Unknown step type: %s", step.Type),
-				"timestamp": time.Now().Format(time.RFC3339),
+			default:
+				logger.Warn("Unknown step type, skipping", "stepType", step.Type)
+				stepResult = map[string]interface{}{
+					"status":    "skipped",
+					"message":   fmt.Sprintf("Unknown step type: %s", step.Type),
+					"timestamp": time.Now().Format(time.RFC3339),
+				}
 			}
 		}
 
@@ -275,4 +338,82 @@ func evaluateExpression(expression string, context map[string]interface{}) inter
 	}
 
 	return result
+}
+
+// convertToNodeInputData converts step input to n8n node input format
+func convertToNodeInputData(stepInput map[string]interface{}) [][]map[string]interface{} {
+	// n8n format: array of branches, each branch is array of items
+	// For now, create single branch with single item
+	item := make(map[string]interface{})
+	item["json"] = stepInput
+	
+	return [][]map[string]interface{}{
+		{item},
+	}
+}
+
+// getIntConfig safely extracts int config value with default
+func getIntConfig(config map[string]interface{}, key string, defaultValue int) int {
+	if val, ok := config[key]; ok {
+		if intVal, ok := val.(int); ok {
+			return intVal
+		}
+		if floatVal, ok := val.(float64); ok {
+			return int(floatVal)
+		}
+	}
+	return defaultValue
+}
+
+// resolveExpressions resolves all {{}} expressions in configuration before routing to workers
+func resolveExpressions(config map[string]interface{}, workflowData map[string]interface{}, currentNodeData map[string]interface{}) (map[string]interface{}, error) {
+	// Gather environment variables
+	envVars := make(map[string]string)
+	for _, env := range os.Environ() {
+		// Split on first '=' only
+		parts := splitOnFirst(env, "=")
+		if len(parts) == 2 {
+			envVars[parts[0]] = parts[1]
+		}
+	}
+	
+	// Create expression resolver
+	resolver := expressions.NewExpressionResolver(workflowData, currentNodeData, envVars)
+	
+	// Resolve all values in config
+	resolved, err := resolver.Resolve(config)
+	if err != nil {
+		return config, err
+	}
+	
+	// Convert back to map
+	if resolvedMap, ok := resolved.(map[string]interface{}); ok {
+		return resolvedMap, nil
+	}
+	
+	return config, nil
+}
+
+func splitOnFirst(s string, sep string) []string {
+	idx := -1
+	for i := 0; i < len(s); i++ {
+		if s[i] == sep[0] {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		return []string{s}
+	}
+	return []string{s[:idx], s[idx+1:]}
+}
+
+// getMapConfig safely extracts map config value
+func getMapConfig(config map[string]interface{}, key string) map[string]interface{} {
+	if val, ok := config[key]; ok {
+		if mapVal, ok := val.(map[string]interface{}); ok {
+			return mapVal
+		}
+	}
+	return make(map[string]interface{})
 }

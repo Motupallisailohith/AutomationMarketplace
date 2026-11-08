@@ -1,0 +1,190 @@
+// Automation Marketplace Custom Primitives
+// Custom color scheme for Automation Marketplace platform
+// Primary: Indigo, Secondary: Pink, Success: Green, Warning: Amber, Danger: Red
+
+@mixin primitives {
+	// White
+	--color--white-alpha-100: hsla(220, 1%, 100%, 0.1);
+	--color--white-alpha-200: hsla(220, 1%, 100%, 0.15);
+	--color--white-alpha-300: hsla(220, 1%, 100%, 0.2);
+	--color--white-alpha-400: hsla(220, 1%, 100%, 0.25);
+	--color--white-alpha-500: hsla(220, 1%, 100%, 0.3);
+	--color--white-alpha-600: hsla(220, 1%, 100%, 0.4);
+	--color--white-alpha-700: hsla(220, 1%, 100%, 0.5);
+	--color--white-alpha-800: hsla(220, 1%, 100%, 0.7);
+	--color--white-alpha-900: hsla(220, 1%, 100%, 0.9);
+
+	// Black
+	--color--black-alpha-100: hsl(220, 1%, 0%, 0.05);
+	--color--black-alpha-200: hsl(220, 1%, 0%, 0.1);
+	--color--black-alpha-300: hsl(220, 1%, 0%, 0.2);
+	--color--black-alpha-400: hsl(220, 1%, 0%, 0.3);
+	--color--black-alpha-500: hsl(220, 1%, 0%, 0.5);
+	--color--black-alpha-600: hsl(220, 1%, 0%, 0.8);
+	--color--black-alpha-700: hsl(220, 1%, 0%, 0.85);
+	--color--black-alpha-800: hsl(220, 1%, 0%, 0.9);
+	--color--black-alpha-900: hsl(220, 1%, 0%, 0.95);
+
+	// Neutrals - Slate/Gray scale
+	--color--neutral-white: hsl(0, 0%, 100%);
+	--color--neutral-50: hsl(210, 40%, 98%);
+	--color--neutral-100: hsl(210, 40%, 96.1%);
+	--color--neutral-125: hsl(210, 40%, 95%);
+	--color--neutral-150: hsl(214, 32%, 91%);
+	--color--neutral-200: hsl(213, 27%, 84%);
+	--color--neutral-250: hsl(215, 20%, 65%);
+	--color--neutral-300: hsl(215, 16%, 47%);
+	--color--neutral-400: hsl(215, 19%, 35%);
+	--color--neutral-500: hsl(215, 25%, 27%);
+	--color--neutral-600: hsl(215, 28%, 17%);
+	--color--neutral-700: hsl(217, 33%, 17%);
+	--color--neutral-750: hsl(217, 33%, 15%);
+	--color--neutral-800: hsl(222, 47%, 11%);
+	--color--neutral-850: hsl(220, 39%, 11%);
+	--color--neutral-900: hsl(220, 39%, 11%);
+	--color--neutral-950: hsl(224, 71%, 4%);
+	--color--neutral-black: hsl(0, 0%, 0%);
+	--color--neutral-150-alpha-100: hsla(214, 32%, 91%, 0.1);
+	--color--neutral-300-alpha-100: hsla(215, 16%, 47%, 0.1);
+	--color--neutral-800-alpha-100: hsla(222, 47%, 11%, 0.1);
+
+	// Indigo - Primary Color (replacing Orange)
+	--color--orange-50: hsl(226, 100%, 99%);
+	--color--orange-100: hsl(226, 100%, 96.5%);
+	--color--orange-150: hsl(226, 100%, 94%);
+	--color--orange-200: hsl(226, 93%, 88%);
+	--color--orange-250: hsl(226, 95%, 80%);
+	--color--orange-300: hsl(231, 91%, 68%); // Main Indigo #6366F1
+	--color--orange-400: hsl(234, 89%, 64%);
+	--color--orange-500: hsl(239, 84%, 67%);
+	--color--orange-600: hsl(243, 75%, 59%);
+	--color--orange-700: hsl(244, 58%, 51%);
+	--color--orange-800: hsl(243, 54%, 41%);
+	--color--orange-900: hsl(244, 47%, 33%);
+	--color--orange-950: hsl(244, 47%, 20%);
+
+	--color--orange-alpha-100: hsla(231, 91%, 68%, 0.1);
+	--color--orange-alpha-300: hsla(231, 91%, 68%, 0.35);
+	--color--orange-alpha-500: hsla(231, 91%, 68%, 0.5);
+
+	// Pink - Secondary Color (replacing Purple)
+	--color--purple-50: hsl(330, 81%, 98%);
+	--color--purple-100: hsl(330, 77%, 96%);
+	--color--purple-200: hsl(330, 81%, 91%);
+	--color--purple-300: hsl(330, 81%, 82%); // Main Pink #EC4899
+	--color--purple-400: hsl(330, 81%, 73%);
+	--color--purple-500: hsl(330, 81%, 60%);
+	--color--purple-600: hsl(330, 81%, 60%);
+	--color--purple-700: hsl(336, 84%, 50%);
+	--color--purple-800: hsl(336, 74%, 42%);
+	--color--purple-900: hsl(336, 69%, 35%);
+	--color--purple-950: hsl(336, 84%, 22%);
+
+	--color--purple-alpha-100: hsla(330, 81%, 60%, 0.1);
+	--color--purple-alpha-200: hsla(330, 81%, 60%, 0.25);
+
+	// Emerald Green - Success
+	--color--green-50: hsl(142, 76%, 96%);
+	--color--green-100: hsl(141, 84%, 93%);
+	--color--green-200: hsl(141, 79%, 85%);
+	--color--green-300: hsl(142, 77%, 73%);
+	--color--green-400: hsl(142, 69%, 58%);
+	--color--green-500: hsl(142, 71%, 45%);
+	--color--green-600: hsl(142, 76%, 36%); // Main Green #10B981
+	--color--green-700: hsl(142, 72%, 29%);
+	--color--green-800: hsl(143, 64%, 24%);
+	--color--green-900: hsl(144, 61%, 20%);
+	--color--green-950: hsl(145, 80%, 10%);
+
+	--color--green-alpha-100: hsl(142, 76%, 36%, 0.15);
+	--color--green-alpha-200: hsl(142, 76%, 36%, 0.25);
+
+	// Mint - Keep for accents
+	--color--mint-100: hsl(162, 73%, 90%);
+	--color--mint-200: hsl(162, 73%, 80%);
+	--color--mint-300: hsl(162, 73%, 70%);
+	--color--mint-400: hsl(162, 73%, 60%);
+	--color--mint-500: hsl(162, 73%, 50%);
+	--color--mint-600: hsl(162, 73%, 44%);
+	--color--mint-700: hsl(162, 73%, 30%);
+	--color--mint-800: hsl(162, 73%, 20%);
+	--color--mint-900: hsl(162, 73%, 10%);
+
+	// Red - Danger/Error
+	--color--red-50: hsl(0, 86%, 97%);
+	--color--red-100: hsl(0, 93%, 94%);
+	--color--red-200: hsl(0, 96%, 89%);
+	--color--red-250: hsl(0, 94%, 82%);
+	--color--red-300: hsl(0, 91%, 71%);
+	--color--red-400: hsl(0, 84%, 60%); // Main Red #EF4444
+	--color--red-500: hsl(0, 72%, 51%);
+	--color--red-600: hsl(0, 72%, 51%);
+	--color--red-700: hsl(0, 74%, 42%);
+	--color--red-800: hsl(0, 70%, 35%);
+	--color--red-900: hsl(0, 63%, 31%);
+	--color--red-950: hsl(0, 75%, 17%);
+
+	--color--red-alpha-020: hsla(0, 72%, 51%, 0.2);
+
+	// Blue - Info/Links
+	--color--blue-50: hsl(214, 100%, 97%);
+	--color--blue-100: hsl(214, 95%, 93%);
+	--color--blue-200: hsl(213, 97%, 87%);
+	--color--blue-300: hsl(212, 96%, 78%);
+	--color--blue-400: hsl(213, 94%, 68%);
+	--color--blue-500: hsl(217, 91%, 60%); // Main Blue #3B82F6
+	--color--blue-600: hsl(221, 83%, 53%);
+	--color--blue-700: hsl(224, 76%, 48%);
+	--color--blue-800: hsl(226, 71%, 40%);
+	--color--blue-900: hsl(224, 64%, 33%);
+
+	// Amber - Warning
+	--color--yellow-100: hsl(48, 100%, 96%);
+	--color--yellow-200: hsl(48, 95%, 76%);
+	--color--yellow-300: hsl(46, 97%, 65%);
+	--color--yellow-400: hsl(43, 96%, 56%);
+	--color--yellow-500: hsl(38, 92%, 50%);
+	--color--yellow-600: hsl(32, 95%, 44%);
+	--color--yellow-700: hsl(26, 90%, 37%);
+	--color--yellow-800: hsl(22, 82%, 31%);
+	--color--yellow-900: hsl(21, 77%, 26%);
+
+	// Gold - Warning alternative (keeping n8n's gold for compatibility)
+	--color--gold-50: hsl(48, 100%, 96%);
+	--color--gold-100: hsl(45, 92%, 88%);
+	--color--gold-200: hsl(45, 86%, 81%);
+	--color--gold-300: hsl(41, 96%, 65%);
+	--color--gold-400: hsl(38, 92%, 50%);
+	--color--gold-500: hsl(32, 95%, 44%); // Amber #F59E0B
+	--color--gold-600: hsl(32, 95%, 44%);
+	--color--gold-700: hsl(26, 90%, 37%);
+	--color--gold-800: hsl(22, 82%, 31%);
+	--color--gold-900: hsl(21, 77%, 26%);
+	--color--gold-950: hsl(20, 80%, 16%);
+
+	// Teal - Additional accent
+	--color--teal-50: hsl(166, 76%, 97%);
+	--color--teal-100: hsl(167, 85%, 89%);
+	--color--teal-200: hsl(168, 84%, 78%);
+	--color--teal-300: hsl(171, 77%, 64%);
+	--color--teal-400: hsl(172, 66%, 50%);
+	--color--teal-500: hsl(173, 80%, 40%);
+	--color--teal-600: hsl(175, 84%, 32%);
+	--color--teal-700: hsl(175, 77%, 26%);
+	--color--teal-800: hsl(176, 69%, 22%);
+	--color--teal-900: hsl(176, 61%, 19%);
+	--color--teal-950: hsl(179, 84%, 10%);
+
+	// Violet - Additional accent
+	--color--violet-50: hsl(250, 100%, 98%);
+	--color--violet-100: hsl(251, 91%, 95%);
+	--color--violet-200: hsl(251, 95%, 92%);
+	--color--violet-300: hsl(252, 95%, 85%);
+	--color--violet-400: hsl(255, 92%, 76%);
+	--color--violet-500: hsl(258, 90%, 66%); // Violet #8B5CF6
+	--color--violet-600: hsl(262, 83%, 58%);
+	--color--violet-700: hsl(263, 70%, 50%);
+	--color--violet-800: hsl(263, 69%, 42%);
+	--color--violet-900: hsl(264, 67%, 35%);
+	--color--violet-950: hsl(261, 73%, 23%);
+}

@@ -1,0 +1,97 @@
+// Primitive Colors - Base color palette
+// These should only be mapped to tokens, never used directly in components
+
+@mixin primitives {
+  // Neutral colors
+  --color--neutral-white: hsl(0, 0%, 100%);
+  --color--neutral-50: hsl(0, 0%, 99%);
+  --color--neutral-100: hsl(0, 0%, 97.5%);
+  --color--neutral-125: hsl(0, 0%, 96%);
+  --color--neutral-150: hsl(0, 0%, 93%);
+  --color--neutral-200: hsl(0, 0%, 88%);
+  --color--neutral-250: hsl(0, 0%, 80%);
+  --color--neutral-300: hsl(0, 0%, 68%);
+  --color--neutral-400: hsl(0, 0%, 58%);
+  --color--neutral-500: hsl(0, 0%, 51%);
+  --color--neutral-600: hsl(0, 0%, 46%);
+  --color--neutral-700: hsl(0, 0%, 30%);
+  --color--neutral-750: hsl(0, 0%, 26%);
+  --color--neutral-800: hsl(0, 0%, 24%);
+  --color--neutral-850: hsl(0, 0%, 17%);
+  --color--neutral-900: hsl(0, 0%, 13%);
+  --color--neutral-950: hsl(0, 0%, 9%);
+  --color--neutral-black: hsl(0, 0%, 0%);
+
+  // Blue - Primary brand color
+  --color--blue-50: hsl(210, 100%, 98%);
+  --color--blue-100: hsl(210, 100%, 95%);
+  --color--blue-150: hsl(210, 100%, 93%);
+  --color--blue-200: hsl(210, 100%, 88%);
+  --color--blue-250: hsl(210, 100%, 78%);
+  --color--blue-300: hsl(210, 100%, 68%);
+  --color--blue-400: hsl(210, 95%, 60%);
+  --color--blue-500: hsl(210, 90%, 50%);
+  --color--blue-600: hsl(210, 85%, 45%);
+  --color--blue-700: hsl(210, 80%, 35%);
+  --color--blue-800: hsl(210, 75%, 25%);
+  --color--blue-900: hsl(210, 70%, 15%);
+  --color--blue-950: hsl(210, 65%, 10%);
+
+  // Purple - Secondary brand color
+  --color--purple-50: hsl(260, 60%, 98%);
+  --color--purple-100: hsl(260, 60%, 95%);
+  --color--purple-200: hsl(260, 60%, 93%);
+  --color--purple-300: hsl(260, 60%, 83%);
+  --color--purple-400: hsl(260, 60%, 73%);
+  --color--purple-500: hsl(260, 60%, 63%);
+  --color--purple-600: hsl(260, 60%, 53%);
+  --color--purple-700: hsl(260, 60%, 43%);
+  --color--purple-800: hsl(260, 60%, 37%);
+  --color--purple-900: hsl(260, 60%, 30%);
+  --color--purple-950: hsl(260, 60%, 21%);
+
+  // Green - Success states
+  --color--green-50: hsl(145, 60%, 95%);
+  --color--green-100: hsl(145, 60%, 90%);
+  --color--green-200: hsl(145, 60%, 80%);
+  --color--green-300: hsl(145, 60%, 70%);
+  --color--green-400: hsl(145, 60%, 60%);
+  --color--green-500: hsl(145, 60%, 50%);
+  --color--green-600: hsl(145, 60%, 40%);
+  --color--green-700: hsl(145, 60%, 30%);
+  --color--green-800: hsl(145, 60%, 25%);
+  --color--green-900: hsl(145, 60%, 20%);
+  --color--green-950: hsl(145, 60%, 10%);
+
+  // Red - Error/danger states
+  --color--red-50: hsl(0, 85%, 98%);
+  --color--red-100: hsl(0, 85%, 95%);
+  --color--red-200: hsl(0, 85%, 90%);
+  --color--red-250: hsl(0, 85%, 85%);
+  --color--red-300: hsl(0, 85%, 75%);
+  --color--red-400: hsl(0, 85%, 65%);
+  --color--red-500: hsl(0, 85%, 55%);
+  --color--red-600: hsl(0, 85%, 45%);
+  --color--red-700: hsl(0, 85%, 35%);
+  --color--red-800: hsl(0, 85%, 25%);
+  --color--red-900: hsl(0, 85%, 15%);
+  --color--red-950: hsl(0, 85%, 10%);
+
+  // Yellow - Warning states / sticky notes
+  --color--yellow-50: hsl(48, 95%, 95%);
+  --color--yellow-100: hsl(48, 95%, 88%);
+  --color--yellow-200: hsl(48, 95%, 78%);
+  --color--yellow-300: hsl(48, 95%, 68%);
+  --color--yellow-400: hsl(48, 95%, 58%);
+  --color--yellow-500: hsl(48, 95%, 48%);
+  --color--yellow-600: hsl(48, 95%, 38%);
+
+  // Gold - Warning
+  --color--gold-50: hsl(45, 90%, 95%);
+  --color--gold-100: hsl(45, 90%, 85%);
+  --color--gold-200: hsl(45, 90%, 75%);
+  --color--gold-300: hsl(45, 90%, 65%);
+  --color--gold-400: hsl(45, 90%, 55%);
+  --color--gold-500: hsl(45, 90%, 45%);
+  --color--gold-600: hsl(45, 90%, 35%);
+}

@@ -1,6 +1,17 @@
 import crypto from 'crypto';
-import { databaseService } from './database';
+import { Container } from '@n8n/di';
+import { CredentialsRepository } from '@n8n/db';
 import { logger } from '../shared/logger';
+
+// This file is deprecated - use credentials.service.ts instead
+// Keeping for backward compatibility only
+const databaseService = {
+  createCredential: async (data: any): Promise<any> => { throw new Error('Use CredentialsService instead'); },
+  getCredentials: async (userId: any): Promise<any[]> => { throw new Error('Use CredentialsService instead'); },
+  getCredential: async (id: any): Promise<any> => { throw new Error('Use CredentialsService instead'); },
+  updateCredential: async (id: any, data: any): Promise<any> => { throw new Error('Use CredentialsService instead'); },
+  deleteCredential: async (id: any): Promise<any> => { throw new Error('Use CredentialsService instead'); },
+};
 
 interface CreateCredentialParams {
   id?: string;
@@ -221,6 +232,41 @@ class CredentialService {
         userId,
       });
       throw new Error('Failed to decrypt credential');
+    }
+  }
+
+  /**
+   * Get decrypted credential by ID (internal use - no user check)
+   * WARNING: Only use this for internal workflow execution
+   */
+  async getDecryptedCredentialById(id: string): Promise<DecryptedCredential | null> {
+    try {
+      const credential = await databaseService.getCredential(id);
+      
+      if (!credential) {
+        return null;
+      }
+
+      // Decrypt the data
+      const decryptedDataString = this.decrypt(credential.encrypted_data, credential.iv);
+      const data = JSON.parse(decryptedDataString);
+
+      return {
+        id: credential.id,
+        name: credential.name,
+        type: credential.type,
+        data,
+        description: credential.description,
+        createdAt: credential.created_at,
+        updatedAt: credential.updated_at,
+        userId: credential.user_id,
+      };
+    } catch (error) {
+      logger.error('Failed to decrypt credential by ID:', {
+        error: (error as Error).message,
+        credentialId: id,
+      });
+      return null;
     }
   }
 

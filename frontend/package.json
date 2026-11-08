@@ -1,70 +1,39 @@
 {
-  "name": "@automation-platform/frontend",
+  "name": "@automation-marketplace/frontend",
   "version": "1.0.0",
-  "description": "React-based Visual Workflow Editor",
   "private": true,
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0",
-    "react-query": "^3.39.3",
-    "axios": "^1.5.0",
-    "@reduxjs/toolkit": "^1.9.5",
-    "react-redux": "^8.1.2",
-    "reactflow": "^11.10.1",
-    "@monaco-editor/react": "^4.5.2",
-    "@mui/material": "^5.14.5",
-    "@mui/icons-material": "^5.14.3",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "react-hook-form": "^7.45.4",
-    "@hookform/resolvers": "^3.2.0",
-    "yup": "^1.2.0",
-    "react-toastify": "^9.1.3",
-    "react-hotkeys-hook": "^4.4.1",
-    "lodash": "^4.17.21",
-    "date-fns": "^2.30.0",
-    "recharts": "^2.8.0",
-    "react-virtualized": "^9.22.5",
-    "socket.io-client": "^4.7.2",
-    "@types/react-virtualized": "^9.21.21"
-  },
-  "devDependencies": {
-    "@types/react": "^18.2.20",
-    "@types/react-dom": "^18.2.7",
-    "@types/lodash": "^4.14.197",
-    "@vitejs/plugin-react": "^4.0.4",
-    "vite": "^4.4.9",
-    "typescript": "^5.1.6",
-    "@typescript-eslint/eslint-plugin": "^6.4.1",
-    "@typescript-eslint/parser": "^6.4.1",
-    "eslint": "^8.47.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0"
-  },
+  "type": "module",
+  "description": "React frontend for AutomationMarketplace workflow editor",
   "scripts": {
     "dev": "vite",
-    "start": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint src --ext ts,tsx --fix",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "lint": "eslint . --ext ts,tsx",
+    "typecheck": "tsc --noEmit"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "@reduxjs/toolkit": "^2.5.0",
+    "react-redux": "^9.2.0",
+    "reactflow": "^11.11.4",
+    "axios": "^1.12.0",
+    "@tanstack/react-query": "^5.62.0",
+    "lucide-react": "^0.468.0",
+    "tailwindcss": "^3.4.17",
+    "clsx": "^2.1.1"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7",
+    "typescript": "^5.9.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "eslint": "^9.19.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0"
   }
 }

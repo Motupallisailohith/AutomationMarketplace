@@ -1,20 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { authService } from '../services/auth.service';
 import { logger } from '../shared/logger';
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-  iat?: number;
-  exp?: number;
-}
+import type { User } from '@n8n/db';
 
 interface AuthRequest extends Request {
-  user?: JWTPayload;
+  user?: User;
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export const authMiddleware = async (
   req: AuthRequest,
@@ -33,20 +24,18 @@ export const authMiddleware = async (
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-      req.user = decoded;
+      const user = await authService.verifyToken(token);
+      req.user = user;
       
       logger.debug('User authenticated', { 
-        userId: decoded.userId, 
-        email: decoded.email,
-        role: decoded.role 
+        userId: user.id, 
+        email: user.email,
       });
       
       next();
-    } catch (jwtError) {
+    } catch (error) {
       logger.warn('Invalid JWT token', { 
-        token: token.substring(0, 20) + '...',
-        error: (jwtError as Error).message 
+        error: (error as Error).message 
       });
       
       res.status(401).json({
@@ -74,8 +63,8 @@ export const optionalAuth = async (
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-      req.user = decoded;
+      const user = await authService.verifyToken(token);
+      req.user = user;
     } catch (error) {
       // Token is invalid, but we don't fail - just continue without user
       logger.debug('Optional auth failed, continuing without user', { 
@@ -87,7 +76,7 @@ export const optionalAuth = async (
   next();
 };
 
-export const requireRole = (requiredRole: string) => {
+export const requireRole = (requiredRoleSlug: string) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -97,10 +86,11 @@ export const requireRole = (requiredRole: string) => {
       return;
     }
 
-    if (req.user.role !== requiredRole && req.user.role !== 'admin') {
+    const userRole = req.user.role?.slug;
+    if (userRole !== requiredRoleSlug && userRole !== 'admin') {
       res.status(403).json({
         success: false,
-        error: `Access denied. Required role: ${requiredRole}`,
+        error: `Access denied. Required role: ${requiredRoleSlug}`,
       });
       return;
     }

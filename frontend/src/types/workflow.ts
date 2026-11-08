@@ -186,6 +186,7 @@ export type TriggerType =
   | 'schedule'
   | 'manual'
   | 'api'
+  | 'event'
   | 'file_upload'
   | 'email'
   | 'database_change';

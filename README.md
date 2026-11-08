@@ -1,53 +1,112 @@
-# Automation Marketplace - Workflow Orchestration Platform
+# AutomationMarketplace
 
-A modern, scalable workflow automation platform built with event-driven architecture, designed for reliability, maintainability, and performance.
+Enterprise workflow automation platform with marketplace for workflow templates and nodes.
 
-## Architecture Overview
+## 🚀 Quick Start - ONE COMMAND
 
-This platform implements a distributed, event-driven orchestration system with the following components:
+### Prerequisites
+- Docker Desktop (running)
+- Node.js 20+
+- That's it!
 
-- **Frontend UI**: React-based visual workflow editor
-- **API Gateway**: Kong/Envoy for HTTP ingress and load balancing
-- **Service Layer**: REST/gRPC API backend
-- **Workflow Orchestration**: Temporal for exactly-once execution
-- **Worker Pool**: Multi-language workers (Node.js, Rust, Python)
-- **Event Streaming**: Apache Kafka with Redis caching
-- **Data Layer**: PostgreSQL, DuckDB, S3 storage
-- **Observability**: Prometheus, Grafana, Jaeger
+### Start Everything
 
-## Project Structure
+```bash
+cd c:\Users\sailo\AutomationMarketplace
 
-```
-├── frontend/           # React TypeScript UI
-├── api/               # API Gateway & Service Layer
-├── orchestrator/      # Temporal Workflows & Activities
-├── workers/           # Heterogeneous Worker Pool
-│   ├── nodejs/       # HTTP/API integration workers
-│   ├── rust/         # Compute/binary data workers
-│   └── python/       # ML/data science workers
-├── messaging/         # Kafka/Redis event handling
-├── db/               # Database schemas & migrations
-├── observability/    # Monitoring & tracing configs
-└── infrastructure/   # Docker, K8s, Helm charts
+# Start all services (API, Frontend, Database, Everything!)
+scripts\dev.bat start
 ```
 
-## Key Design Principles
+**Wait 30 seconds**, then open:
+- 🌐 **Frontend**: http://localhost:5173
+- 🔌 **API**: http://localhost:3000
+- 📊 **Temporal UI**: http://localhost:8081
 
-- **Event Sourcing**: All workflow events stored as ordered log in Kafka
-- **Idempotent Execution**: Workers produce consistent results for retries
-- **Exactly-Once Guarantee**: Temporal ensures reliable execution
-- **Resource Isolation**: Kubernetes enforces per-worker limits
-- **Binary Streaming**: Large files never loaded in memory
-- **Data Retention**: OLTP in PostgreSQL, analytics in DuckDB, archive in S3
+### All Commands
 
-## Technology Stack
+```bash
+scripts\dev.bat start      # Start everything
+scripts\dev.bat stop       # Stop everything
+scripts\dev.bat restart    # Restart all services
+scripts\dev.bat test       # Run automated tests
+scripts\dev.bat build      # Build for production
+scripts\dev.bat clean      # Deep clean and restart
+```
 
-- **Frontend**: React, TypeScript
-- **Backend**: Node.js/Express, Go (Temporal), Rust (compute)
-- **Orchestration**: Temporal
-- **Messaging**: Apache Kafka, Redis
-- **Databases**: PostgreSQL, DuckDB, S3
-- **Infrastructure**: Docker, Kubernetes, Helm
+That's it! One script for everything.
+
+## 📦 Project Structure
+
+```
+AutomationMarketplace/
+├── packages/
+│   ├── @n8n/           # Core n8n packages
+│   ├── cli/            # API Server (Express)
+│   ├── core/           # Workflow utilities
+│   ├── frontend/       # Vue 3 Frontend
+│   ├── nodes-base/     # 1000+ integration nodes
+│   ├── workflow/       # Workflow engine types
+│   └── ...
+├── orchestrator-go/    # Go + Temporal workflow orchestrator
+├── frontend/           # Main dashboard frontend
+├── api/                # Additional API services
+├── scripts/            # Build & deployment scripts
+└── docker-compose.yml  # Infrastructure setup
+```
+
+## 🏗️ Architecture
+
+- **Frontend**: Vue 3 + TypeScript + Vite
+- **API**: Node.js + Express + TypeORM
+- **Orchestrator**: Go + Temporal
+- **Database**: PostgreSQL
+- **Cache**: Redis
+- **Workflow Engine**: Temporal
+
+## 🛠️ Development Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Build all packages
+pnpm build
+
+# Run tests
+pnpm test
+
+# Lint code
+pnpm lint
+
+# Format code
+pnpm format
+
+# Type check
+pnpm typecheck
+```
+
+## 📚 Key Features
+
+- **Workflow Automation**: Visual workflow editor with 1000+ integrations
+- **Marketplace**: Browse and install workflow templates
+- **Multi-tenancy**: Isolated workspaces for organizations
+- **Real-time Execution**: Temporal-based workflow orchestration
+- **Extensible**: Custom nodes and integrations
+- **Enterprise Ready**: RBAC, audit logs, SSO support
+
+## 🐳 Docker Deployment
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
 - **Observability**: Prometheus, Grafana, Jaeger
 
 ## Quick Start

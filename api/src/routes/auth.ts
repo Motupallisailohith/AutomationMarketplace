@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { authService } from '../services/auth';
+import { authService } from '../services/auth.service';
 import { logger } from '../shared/logger';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
+
+const MIN_PASSWORD_CHAR_LENGTH = 8;
+const MAX_PASSWORD_CHAR_LENGTH = 128;
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -19,10 +22,18 @@ router.post('/register', async (req, res) => {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < MIN_PASSWORD_CHAR_LENGTH) {
       res.status(400).json({
         success: false,
-        error: 'Password must be at least 6 characters long',
+        error: `Password must be at least ${MIN_PASSWORD_CHAR_LENGTH} characters long`,
+      });
+      return;
+    }
+
+    if (password.length > MAX_PASSWORD_CHAR_LENGTH) {
+      res.status(400).json({
+        success: false,
+        error: `Password must be at most ${MAX_PASSWORD_CHAR_LENGTH} characters long`,
       });
       return;
     }
@@ -50,12 +61,10 @@ router.post('/register', async (req, res) => {
       message: 'User registered successfully',
       data: {
         user: {
-          id: result.user?.id,
-          email: result.user?.email,
-          firstName: result.user?.first_name,
-          lastName: result.user?.last_name,
-          role: result.user?.role,
-          updatedAt: result.user?.updated_at,
+          id: result.user.id,
+          email: result.user.email,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
         },
         token: result.tokens.accessToken,
         refreshToken: result.tokens.refreshToken,
@@ -100,10 +109,9 @@ router.post('/login', async (req, res) => {
         user: {
           id: result.user?.id,
           email: result.user?.email,
-          firstName: result.user?.first_name,
-          lastName: result.user?.last_name,
+          firstName: result.user?.firstName,
+          lastName: result.user?.lastName,
           role: result.user?.role,
-          lastLoginAt: result.user?.last_login_at,
         },
         token: result.tokens.accessToken,
         refreshToken: result.tokens.refreshToken,
@@ -154,6 +162,44 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+// Get current user (alias for /profile)
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    const user = await authService.getUserById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+      },
+    });
+
+  } catch (error: any) {
+    logger.error('Failed to get current user:', { error: error?.message || error });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get current user',
+    });
+  }
+});
+
 // Get current user profile
 router.get('/profile', authMiddleware, async (req, res) => {
   try {
@@ -175,11 +221,10 @@ router.get('/profile', authMiddleware, async (req, res) => {
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           role: user.role,
-          createdAt: user.created_at,
-          lastLoginAt: user.last_login_at,
+          createdAt: user.createdAt,
         },
       },
     });
@@ -215,15 +260,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
       updates.email = email;
     }
 
-    const result = await authService.updateUser(userId, updates);
-
-    if (!result.success) {
-      res.status(400).json({
-        success: false,
-        error: result.error,
-      });
-      return;
-    }
+    const user = await authService.updateUser(userId, updates);
 
     logger.info('User profile updated', { userId });
 
@@ -232,12 +269,12 @@ router.put('/profile', authMiddleware, async (req, res) => {
       message: 'Profile updated successfully',
       data: {
         user: {
-          id: result.user?.id,
-          email: result.user?.email,
-          firstName: result.user?.first_name,
-          lastName: result.user?.last_name,
-          role: result.user?.role,
-          updatedAt: result.user?.updated_at,
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          updatedAt: user.updatedAt,
         },
       },
     });
@@ -266,10 +303,18 @@ router.post('/change-password', authMiddleware, async (req, res) => {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < MIN_PASSWORD_CHAR_LENGTH) {
       res.status(400).json({
         success: false,
-        error: 'New password must be at least 6 characters long',
+        error: `New password must be at least ${MIN_PASSWORD_CHAR_LENGTH} characters long`,
+      });
+      return;
+    }
+
+    if (newPassword.length > MAX_PASSWORD_CHAR_LENGTH) {
+      res.status(400).json({
+        success: false,
+        error: `New password must be at most ${MAX_PASSWORD_CHAR_LENGTH} characters long`,
       });
       return;
     }

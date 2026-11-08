@@ -1,65 +1,64 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../shared/logger';
-
-export interface CustomError extends Error {
-  statusCode?: number;
-  code?: string;
-}
+import { UserError, OperationalError, UnexpectedError, NotFoundError, UnauthorizedError, ForbiddenError, ConflictError, ValidationError } from '../errors';
 
 export function errorHandler(
-  err: CustomError,
+  err: Error,
   req: Request,
   res: Response,
   _next: NextFunction
 ): Response | void {
   // Log error details
   logger.error('Error occurred:', {
+    name: err.name,
     message: err.message,
     stack: err.stack,
-    statusCode: err.statusCode,
     method: req.method,
     url: req.url,
     userAgent: req.get('User-Agent'),
     ip: req.ip,
   });
 
-  // Default error
-  let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
-
-  // Handle specific error types
-  if (err.name === 'ValidationError') {
-    statusCode = 400;
-    message = 'Validation failed';
-  } else if (err.name === 'UnauthorizedError' || err.message.includes('unauthorized')) {
-    statusCode = 401;
-    message = 'Unauthorized access';
-  } else if (err.name === 'ForbiddenError') {
-    statusCode = 403;
-    message = 'Forbidden';
-  } else if (err.name === 'NotFoundError') {
-    statusCode = 404;
-    message = 'Resource not found';
-  } else if (err.code === 'ECONNREFUSED') {
-    statusCode = 503;
-    message = 'Service unavailable';
-  } else if (err.code === '23505') { // PostgreSQL unique violation
-    statusCode = 409;
-    message = 'Resource already exists';
+  // Handle structured errors
+  if (err instanceof UserError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+      ...(err instanceof ValidationError && err.fields ? { fields: err.fields } : {}),
+    });
   }
 
-  // Don't expose internal errors in production
-  if (process.env.NODE_ENV === 'production' && statusCode === 500) {
-    message = 'Internal Server Error';
+  if (err instanceof OperationalError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+      retryable: err.retryable,
+    });
   }
+
+  if (err instanceof UnexpectedError) {
+    // Don't expose internal details in production
+    const message = process.env.NODE_ENV === 'production' 
+      ? 'An unexpected error occurred' 
+      : err.message;
+    
+    return res.status(500).json({
+      success: false,
+      error: message,
+    });
+  }
+
+  // Fallback for unhandled errors
+  const statusCode = 500;
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal Server Error'
+    : err.message;
 
   return res.status(statusCode).json({
-    error: {
-      message,
-      statusCode,
-      timestamp: new Date().toISOString(),
-      path: req.url,
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
-    },
+    success: false,
+    error: message,
+    timestamp: new Date().toISOString(),
+    path: req.url,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 }

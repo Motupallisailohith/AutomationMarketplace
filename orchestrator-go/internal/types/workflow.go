@@ -43,3 +43,23 @@ type UpdateExecutionInput struct {
 	OutputData      interface{} `json:"output_data,omitempty"`
 	ErrorMessage    string      `json:"error_message,omitempty"`
 }
+
+// ExecuteNode activity input (for Node.js worker)
+type ExecuteNodeInput struct {
+	NodeType    string                 `json:"nodeType"`
+	NodeVersion int                    `json:"nodeVersion"`
+	Parameters  map[string]interface{} `json:"parameters"`
+	InputData   [][]map[string]interface{} `json:"inputData"`
+	Credentials map[string]string      `json:"credentials,omitempty"`
+	ExecutionID string                 `json:"executionId"`
+	WorkflowID  string                 `json:"workflowId"`
+	NodeID      string                 `json:"nodeId"`
+}
+
+// ExecuteNode activity output
+type ExecuteNodeOutput struct {
+	Success       bool                       `json:"success"`
+	Data          [][]map[string]interface{} `json:"data"`
+	Error         string                     `json:"error,omitempty"`
+	ExecutionTime int                        `json:"executionTime,omitempty"`
+}

@@ -1,0 +1,31 @@
+# Temporal Dynamic Configuration for Docker
+# Minimal config to get Temporal running
+
+# Workflow execution settings
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: false
+    constraints: {}
+
+# History settings
+history.maxAutoResetPoints:
+  - value: 20
+    constraints: {}
+
+# Frontend settings
+frontend.enableClientVersionCheck:
+  - value: true
+    constraints: {}
+
+# Matching settings
+matching.numTaskqueueReadPartitions:
+  - value: 4
+    constraints: {}
+
+matching.numTaskqueueWritePartitions:
+  - value: 4
+    constraints: {}
+
+# Worker settings
+worker.executionMaxRetentionTTL:
+  - value: "30d"
+    constraints: {}

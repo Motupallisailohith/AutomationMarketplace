@@ -1,13 +1,29 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import { databaseService } from '../services/database';
-import { logger } from '../shared/logger';
+import { Container } from '@n8n/di';
+import { GlobalConfig } from '@n8n/config';
+import { WorkflowRepository } from '@n8n/db';
+import { Logger } from '@n8n/backend-common';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
+// Get repositories from DI container
+const workflowRepository = Container.get(WorkflowRepository);
+const logger = Container.get(Logger);
+
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
+
+/**
+ * NOTE: This file needs refactoring to work with n8n's architecture.
+ * In n8n, triggers are nodes within workflows, not separate entities.
+ * Options:
+ * 1. Extract trigger nodes from workflows using workflowRepository
+ * 2. Create a custom triggers table separate from n8n
+ * 
+ * For now, returning stub responses to allow compilation.
+ */
 
 // Get all triggers for authenticated user
 router.get('/', async (req, res) => {
@@ -15,42 +31,15 @@ router.get('/', async (req, res) => {
     const userId = (req as any).user.userId;
     const workflowId = req.query.workflowId as string;
     
-    let triggers;
-    if (workflowId) {
-      // Verify user owns the workflow
-      const workflow = await databaseService.getWorkflow(workflowId);
-      if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-        res.status(403).json({
-          success: false,
-          error: 'Access denied to workflow triggers'
-        });
-        return;
-      }
-      triggers = await databaseService.getTriggers(workflowId);
-    } else {
-      // Get all triggers for workflows owned by user
-      const userWorkflows = await databaseService.getWorkflows(userId);
-      const workflowIds = userWorkflows.map(w => w.id);
-      triggers = [];
-      for (const wfId of workflowIds) {
-        const wfTriggers = await databaseService.getTriggers(wfId);
-        triggers.push(...wfTriggers);
-      }
-    }
+    // TODO: Implement using WorkflowRepository
+    // Need to extract trigger nodes from workflow.nodes array
     
-    logger.info('Triggers retrieved', { userId, count: triggers.length, workflowId });
+    logger.warn('Triggers endpoint not yet implemented', { userId, workflowId });
     
     res.json({
       success: true,
-      data: triggers.map(t => ({
-        id: t.id,
-        workflowId: t.workflow_id,
-        type: t.type,
-        configuration: t.configuration,
-        isActive: t.is_active,
-        createdAt: t.created_at,
-        updatedAt: t.updated_at,
-      })),
+      data: [],
+      message: 'Triggers endpoint not yet implemented - needs refactoring to use workflow nodes'
     });
   } catch (error: any) {
     logger.error('Failed to retrieve triggers:', { error: error?.message || error });
@@ -67,39 +56,13 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
     
-    const trigger = await databaseService.getTrigger(id);
+    // TODO: Implement using WorkflowRepository
     
-    if (!trigger) {
-      res.status(404).json({
-        success: false,
-        error: 'Trigger not found'
-      });
-      return;
-    }
+    logger.warn('Get trigger endpoint not yet implemented', { triggerId: id, userId });
     
-    // Check if user owns the workflow containing this trigger
-    const workflow = await databaseService.getWorkflow(trigger.workflow_id);
-    if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
-    
-    logger.info('Trigger retrieved', { triggerId: id, userId });
-    
-    res.json({
-      success: true,
-      data: {
-        id: trigger.id,
-        workflowId: trigger.workflow_id,
-        type: trigger.type,
-        configuration: trigger.configuration,
-        isActive: trigger.is_active,
-        createdAt: trigger.created_at,
-        updatedAt: trigger.updated_at,
-      },
+    res.status(404).json({
+      success: false,
+      error: 'Trigger endpoint not yet implemented',
     });
   } catch (error: any) {
     logger.error('Failed to retrieve trigger:', { 
@@ -119,67 +82,14 @@ router.post('/', async (req, res) => {
     const userId = (req as any).user.userId;
     const { workflowId, type, configuration, isActive = true } = req.body;
     
-    if (!workflowId || !type || !configuration) {
-      res.status(400).json({
-        success: false,
-        error: 'Workflow ID, type, and configuration are required'
-      });
-      return;
-    }
+    // TODO: Implement by adding trigger node to workflow
     
-    // Check if user owns the workflow
-    const workflow = await databaseService.getWorkflow(workflowId);
-    if (!workflow) {
-      res.status(404).json({
-        success: false,
-        error: 'Workflow not found'
-      });
-      return;
-    }
+    logger.warn('Create trigger endpoint not yet implemented', { userId, workflowId, type });
     
-    if (workflow.created_by !== userId && (req as any).user.role !== 'admin') {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
-    
-    // Validate trigger type
-    const validTypes = ['webhook', 'schedule', 'manual', 'api', 'email'];
-    if (!validTypes.includes(type)) {
-      res.status(400).json({
-        success: false,
-        error: `Invalid trigger type. Must be one of: ${validTypes.join(', ')}`
-      });
-      return;
-    }
-    
-    const triggerId = crypto.randomUUID();
-    
-    // Create trigger
-    const trigger = await databaseService.createTrigger({
-      id: triggerId,
-      workflowId,
-      type,
-      configuration,
-      isActive,
-    });
-    
-    logger.info('Trigger created', { triggerId, workflowId, type, userId });
-    
-    res.status(201).json({
-      success: true,
-      data: {
-        id: trigger.id,
-        workflowId: trigger.workflow_id,
-        type: trigger.type,
-        configuration: trigger.configuration,
-        isActive: trigger.is_active,
-        createdAt: trigger.created_at,
-        updatedAt: trigger.updated_at,
-      },
-      message: 'Trigger created successfully',
+    res.status(501).json({
+      success: false,
+      error: 'Create trigger endpoint not yet implemented',
+      message: 'Triggers should be created as nodes within workflows'
     });
   } catch (error: any) {
     logger.error('Failed to create trigger:', { error: error?.message || error });
@@ -195,62 +105,14 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.userId;
-    const { type, configuration, isActive } = req.body;
     
-    // Check if trigger exists
-    const existingTrigger = await databaseService.getTrigger(id);
-    if (!existingTrigger) {
-      res.status(404).json({
-        success: false,
-        error: 'Trigger not found'
-      });
-      return;
-    }
+    // TODO: Implement using WorkflowRepository
     
-    // Check if user owns the workflow containing this trigger
-    const workflow = await databaseService.getWorkflow(existingTrigger.workflow_id);
-    if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
+    logger.warn('Update trigger endpoint not yet implemented', { triggerId: id, userId });
     
-    // Validate trigger type if provided
-    if (type) {
-      const validTypes = ['webhook', 'schedule', 'manual', 'api', 'email'];
-      if (!validTypes.includes(type)) {
-        res.status(400).json({
-          success: false,
-          error: `Invalid trigger type. Must be one of: ${validTypes.join(', ')}`
-        });
-        return;
-      }
-    }
-    
-    // Update trigger
-    const updates: any = {};
-    if (type !== undefined) updates.type = type;
-    if (configuration !== undefined) updates.configuration = JSON.stringify(configuration);
-    if (isActive !== undefined) updates.is_active = isActive;
-    
-    const trigger = await databaseService.updateTrigger(id, updates);
-    
-    logger.info('Trigger updated', { triggerId: id, userId });
-    
-    res.json({
-      success: true,
-      data: {
-        id: trigger.id,
-        workflowId: trigger.workflow_id,
-        type: trigger.type,
-        configuration: trigger.configuration,
-        isActive: trigger.is_active,
-        createdAt: trigger.created_at,
-        updatedAt: trigger.updated_at,
-      },
-      message: 'Trigger updated successfully',
+    res.status(501).json({
+      success: false,
+      error: 'Update trigger endpoint not yet implemented'
     });
   } catch (error: any) {
     logger.error('Failed to update trigger:', { 
@@ -270,34 +132,13 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
     
-    // Check if trigger exists
-    const existingTrigger = await databaseService.getTrigger(id);
-    if (!existingTrigger) {
-      res.status(404).json({
-        success: false,
-        error: 'Trigger not found'
-      });
-      return;
-    }
+    // TODO: Implement using WorkflowRepository
     
-    // Check if user owns the workflow containing this trigger
-    const workflow = await databaseService.getWorkflow(existingTrigger.workflow_id);
-    if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
+    logger.warn('Delete trigger endpoint not yet implemented', { triggerId: id, userId });
     
-    // Delete trigger
-    await databaseService.deleteTrigger(id);
-    
-    logger.info('Trigger deleted', { triggerId: id, userId });
-    
-    res.json({
-      success: true,
-      message: 'Trigger deleted successfully',
+    res.status(501).json({
+      success: false,
+      error: 'Delete trigger endpoint not yet implemented'
     });
   } catch (error: any) {
     logger.error('Failed to delete trigger:', { 
@@ -317,51 +158,13 @@ router.get('/:id/webhook-urls', async (req, res) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
     
-    const trigger = await databaseService.getTrigger(id);
+    // TODO: Implement using WorkflowRepository
     
-    if (!trigger) {
-      res.status(404).json({
-        success: false,
-        error: 'Trigger not found'
-      });
-      return;
-    }
+    logger.warn('Get webhook URLs endpoint not yet implemented', { triggerId: id, userId });
     
-    if (trigger.type !== 'webhook') {
-      res.status(400).json({
-        success: false,
-        error: 'This endpoint is only for webhook triggers'
-      });
-      return;
-    }
-    
-    // Check if user owns the workflow containing this trigger
-    const workflow = await databaseService.getWorkflow(trigger.workflow_id);
-    if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
-    
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001';
-    const testUrl = `${baseUrl}/api/webhooks/test/${id}`;
-    const prodUrl = `${baseUrl}/api/webhooks/prod/${id}`;
-    
-    res.json({
-      success: true,
-      data: {
-        triggerId: id,
-        testUrl,
-        prodUrl,
-        isActive: trigger.is_active,
-        configuration: trigger.configuration,
-        instructions: {
-          test: 'Use the test URL for development and testing webhook triggers',
-          prod: 'Use the production URL for live webhook integrations'
-        }
-      },
+    res.status(501).json({
+      success: false,
+      error: 'Webhook URLs endpoint not yet implemented'
     });
   } catch (error: any) {
     logger.error('Failed to get webhook URLs:', { 
@@ -380,58 +183,27 @@ router.post('/:id/test', async (req, res) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.userId;
-    const { testData = {} } = req.body;
     
-    const trigger = await databaseService.getTrigger(id);
+    // TODO: Implement trigger testing using WorkflowRepository
+    // For now, return stub with webhook URL generation
     
-    if (!trigger) {
-      res.status(404).json({
-        success: false,
-        error: 'Trigger not found'
-      });
-      return;
-    }
+    logger.warn('Test trigger endpoint not yet implemented', { triggerId: id, userId });
     
-    // Check if user owns the workflow containing this trigger
-    const workflow = await databaseService.getWorkflow(trigger.workflow_id);
-    if (!workflow || (workflow.created_by !== userId && (req as any).user.role !== 'admin')) {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
+    // Generate webhook test URL for demonstration
+    const config = Container.get(GlobalConfig);
+    const orchestratorUrl = process.env.ORCHESTRATOR_URL || 'http://localhost:8080';
+    const testUrl = `${orchestratorUrl}/api/v1/webhooks/test/${id}`;
     
-    logger.info('Trigger test initiated', { triggerId: id, userId, triggerType: trigger.type });
-    
-    // For webhook triggers, return test URL info
-    if (trigger.type === 'webhook') {
-      const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001';
-      const testUrl = `${baseUrl}/api/webhooks/test/${id}`;
-      
-      res.json({
-        success: true,
-        data: {
-          triggerId: id,
-          type: trigger.type,
-          testUrl,
-          message: 'Use the test URL to simulate webhook triggers',
-          configuration: trigger.configuration,
-        },
-      });
-    } else {
-      // For other trigger types, just return test confirmation
-      res.json({
-        success: true,
-        data: {
-          triggerId: id,
-          type: trigger.type,
-          message: `Test data received for ${trigger.type} trigger`,
-          testData,
-          configuration: trigger.configuration,
-        },
-      });
-    }
+    res.status(501).json({
+      success: false,
+      error: 'Test trigger endpoint not yet implemented',
+      message: 'Trigger testing should use WorkflowRepository to extract trigger nodes',
+      testInfo: {
+        triggerId: id,
+        suggestedTestUrl: testUrl,
+        note: 'Actual webhook execution happens in Go orchestrator'
+      }
+    });
   } catch (error: any) {
     logger.error('Failed to test trigger:', { 
       triggerId: req.params.id, 

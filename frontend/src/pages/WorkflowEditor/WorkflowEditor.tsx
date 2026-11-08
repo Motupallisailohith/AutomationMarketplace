@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Box, 
   Paper, 
@@ -9,14 +9,22 @@ import {
   Typography,
   Dialog,
   DialogTitle,
-  DialogContent
+  DialogContent,
+  TextField,
+  Menu,
+  MenuItem,
+  DialogActions,
+  Alert
 } from '@mui/material';
 import {
   Save as SaveIcon,
   PlayArrow as PlayIcon,
   Stop as StopIcon,
   Add as AddIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  MoreVert as MoreVertIcon,
+  FileUpload as FileUploadIcon,
+  Link as LinkIcon
 } from '@mui/icons-material';
 import ReactFlow, {
   Node,
@@ -44,6 +52,7 @@ import {
   selectCurrentWorkflow,
   selectWorkflowExecution 
 } from '@store/slices/workflowSlice';
+import { fetchNodeTypes } from '@store/slices/nodeTypesSlice';
 
 // Custom node components
 import HttpRequestNode from '@components/nodes/HttpRequestNode';
@@ -51,7 +60,7 @@ import DataProcessingNode from '@components/nodes/DataProcessingNode';
 
 // Sidebar components
 import NodePalette from '@components/NodePalette/NodePalette';
-import NodeProperties from '@components/NodeProperties';
+import NodeDetailView from '@components/NodeDetailView/NodeDetailView';
 import TriggerManager from '@components/TriggerManager/TriggerManager';
 import WebhookTrigger from '@components/WebhookTrigger/WebhookTrigger';
 
@@ -60,6 +69,7 @@ import type { WorkflowDefinition, WorkflowStep, WorkflowTrigger, NodeType } from
 
 // Custom node types for ReactFlow
 const nodeTypes: NodeTypes = {
+  http: HttpRequestNode,  // Register 'http' type
   httpRequest: HttpRequestNode,
   dataTransform: DataProcessingNode,
   dataFilter: DataProcessingNode,
@@ -86,6 +96,30 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [triggers, setTriggers] = useState<WorkflowTrigger[]>([]);
   const [showTriggerConfig, setShowTriggerConfig] = useState(false);
+  const [workflowName, setWorkflowName] = useState<string>('Untitled Workflow');
+  const [workflowDescription, setWorkflowDescription] = useState<string>('');
+  
+  // Import menu state
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [showImportUrlDialog, setShowImportUrlDialog] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importError, setImportError] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize workflow name and description when currentWorkflow loads
+  useEffect(() => {
+    if (currentWorkflow) {
+      setWorkflowName(currentWorkflow.name || 'Untitled Workflow');
+      setWorkflowDescription(currentWorkflow.description || '');
+    }
+  }, [currentWorkflow]);
+
+  // Fetch node types from API on mount
+  useEffect(() => {
+    console.log('[WorkflowEditor] Fetching node types from API');
+    dispatch(fetchNodeTypes() as any);
+  }, [dispatch]);
 
   // WebSocket connection for real-time execution updates
   useEffect(() => {
@@ -158,39 +192,233 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
     setNodes((nodes) => [...nodes, newNode]);
   };
 
+  // Auto-save workflow when name changes (after user stops typing)
+  const handleNameBlur = async () => {
+    const trimmedName = workflowName.trim();
+    
+    // Validate name
+    if (!trimmedName) {
+      setWorkflowName(currentWorkflow?.name || 'Untitled Workflow');
+      return;
+    }
+    
+    // Only save if name actually changed
+    if (trimmedName !== currentWorkflow?.name) {
+      await handleSaveWorkflow();
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur(); // Trigger save via blur
+    }
+  };
+
   const handleSaveWorkflow = async () => {
-    const workflowDefinition: WorkflowDefinition = {
-      id: workflowId || `workflow-${Date.now()}`,
-      name: currentWorkflow?.name || 'Untitled Workflow',
-      description: currentWorkflow?.description || '',
-      version: 1,
-      steps: nodes.map((node): WorkflowStep => ({
+    const trimmedName = workflowName.trim();
+    
+    // Validate name before saving
+    if (!trimmedName) {
+      console.error('Workflow name cannot be empty');
+      return;
+    }
+
+    // n8n format - exactly as n8n sends it
+    const workflowData = {
+      // Only include id if updating existing workflow
+      ...(workflowId && !workflowId.startsWith('workflow-') ? { id: workflowId } : {}),
+      
+      name: trimmedName,
+      description: workflowDescription,
+      
+      // n8n nodes format (array of node objects)
+      nodes: nodes.map((node) => ({
         id: node.id,
-        name: node.data.label,
-        type: node.type as any,
-        configuration: node.data.configuration,
-        position: node.position,
-        dependencies: edges
-          .filter((edge) => edge.target === node.id)
-          .map((edge) => edge.source),
-        inputMapping: node.data.inputMapping,
-        outputMapping: node.data.outputMapping,
-        retryPolicy: node.data.retryPolicy,
+        name: node.data.label || node.id,
+        type: node.type,
+        typeVersion: 1,
+        position: [node.position.x, node.position.y],
+        parameters: node.data.configuration || {},
       })),
-      triggers: currentWorkflow?.triggers || [],
-      settings: currentWorkflow?.settings || {
-        timeout: 300000,
-        maxRetries: 3,
-        errorHandling: 'stop',
+      
+      // n8n connections format (nested object structure)
+      connections: edges.reduce((acc, edge) => {
+        const sourceNode = edge.source;
+        const targetNode = edge.target;
+        
+        if (!acc[sourceNode]) {
+          acc[sourceNode] = { main: [[]] };
+        }
+        if (!acc[sourceNode].main) {
+          acc[sourceNode].main = [[]];
+        }
+        if (!acc[sourceNode].main[0]) {
+          acc[sourceNode].main[0] = [];
+        }
+        
+        acc[sourceNode].main[0].push({
+          node: targetNode,
+          type: 'main',
+          index: 0,
+        });
+        
+        return acc;
+      }, {} as any),
+      
+      // n8n settings format
+      settings: {
+        executionTimeout: 300,
+        timezone: 'America/New_York',
+        executionOrder: 'v1',
+        ...((currentWorkflow as any)?.settings || {}),
       },
+      
+      // n8n workflow state
+      active: false, // Always create as inactive (n8n pattern)
+      tags: (currentWorkflow as any)?.tags || [],
+      versionId: (currentWorkflow as any)?.versionId, // Include versionId for updates
     };
 
     try {
-      await dispatch(saveWorkflow(workflowDefinition));
-      console.log('Workflow saved successfully');
+      console.log('📤 Saving workflow (n8n format):', workflowData);
+      await dispatch(saveWorkflow(workflowData as any));
+      console.log('✅ Workflow saved successfully');
     } catch (error) {
-      console.error('Failed to save workflow:', error);
+      console.error('❌ Failed to save workflow:', error);
     }
+  };
+
+  // Import workflow handlers
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  const handleImportFile = () => {
+    handleMenuClose();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      setImportError('');
+      
+      const text = await file.text();
+      const workflowData = JSON.parse(text);
+      
+      // Validate workflow structure
+      if (!workflowData.nodes || !Array.isArray(workflowData.nodes)) {
+        throw new Error('Invalid workflow file: missing nodes array');
+      }
+      if (!workflowData.connections || typeof workflowData.connections !== 'object') {
+        throw new Error('Invalid workflow file: missing connections object');
+      }
+
+      // Load workflow into editor
+      loadImportedWorkflow(workflowData);
+      console.log('✅ Workflow imported from file successfully');
+    } catch (error: any) {
+      setImportError(error.message || 'Failed to import workflow from file');
+      console.error('Error importing file:', error);
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleImportFromUrl = () => {
+    handleMenuClose();
+    setShowImportUrlDialog(true);
+    setImportUrl('');
+    setImportError('');
+  };
+
+  const handleImportUrlSubmit = async () => {
+    if (!importUrl.trim()) {
+      setImportError('Please enter a URL');
+      return;
+    }
+
+    try {
+      setIsImporting(true);
+      setImportError('');
+
+      const response = await fetch(
+        `http://localhost:3000/api/workflows/from-url?url=${encodeURIComponent(importUrl)}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch workflow from URL');
+      }
+
+      const workflowData = await response.json();
+      
+      // Load workflow into editor
+      loadImportedWorkflow(workflowData);
+      
+      setShowImportUrlDialog(false);
+      console.log('✅ Workflow imported from URL successfully');
+    } catch (error: any) {
+      setImportError(error.message || 'Failed to import workflow from URL');
+      console.error('Error importing from URL:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const loadImportedWorkflow = (workflowData: any) => {
+    // Set workflow name and description
+    if (workflowData.name) {
+      setWorkflowName(workflowData.name);
+    }
+    if (workflowData.description) {
+      setWorkflowDescription(workflowData.description);
+    }
+
+    // Convert nodes to ReactFlow format
+    const importedNodes: Node[] = workflowData.nodes.map((node: any) => ({
+      id: node.id || node.name,
+      type: node.type,
+      position: node.position || { x: Math.random() * 500, y: Math.random() * 300 },
+      data: {
+        label: node.name || node.type,
+        configuration: node.parameters || {},
+        status: 'idle',
+        ...node.data,
+      },
+    }));
+
+    // Convert connections to ReactFlow edges
+    const importedEdges: Edge[] = [];
+    Object.entries(workflowData.connections || {}).forEach(([sourceNode, outputs]: [string, any]) => {
+      Object.entries(outputs || {}).forEach(([outputKey, connections]: [string, any]) => {
+        (connections || []).forEach((conn: any, index: number) => {
+          importedEdges.push({
+            id: `e-${sourceNode}-${conn.node}-${index}`,
+            source: sourceNode,
+            target: conn.node,
+            sourceHandle: outputKey,
+            targetHandle: conn.type || 'main',
+            type: 'default',
+          });
+        });
+      });
+    });
+
+    setNodes(importedNodes);
+    setEdges(importedEdges);
   };
 
   const handleExecuteWorkflow = async () => {
@@ -268,9 +496,27 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Toolbar */}
         <Toolbar sx={{ borderBottom: '1px solid #e0e0e0' }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            {currentWorkflow?.name || 'Untitled Workflow'}
-          </Typography>
+          <TextField
+            value={workflowName}
+            onChange={(e) => setWorkflowName(e.target.value)}
+            onBlur={handleNameBlur}
+            onKeyDown={handleNameKeyDown}
+            placeholder="Workflow Name"
+            variant="standard"
+            inputProps={{
+              maxLength: 128,
+            }}
+            sx={{ 
+              flexGrow: 1,
+              '& .MuiInput-root': {
+                fontSize: '1.25rem',
+                fontWeight: 500,
+              },
+              '& .MuiInput-input': {
+                cursor: 'text',
+              }
+            }}
+          />
           
           <Button
             startIcon={<SaveIcon />}
@@ -301,6 +547,26 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
               Execute
             </Button>
           )}
+
+          {/* Three-dot menu for import options */}
+          <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
+            <MoreVertIcon />
+          </IconButton>
+
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleImportFile}>
+              <FileUploadIcon sx={{ mr: 1 }} />
+              Import from File
+            </MenuItem>
+            <MenuItem onClick={handleImportFromUrl}>
+              <LinkIcon sx={{ mr: 1 }} />
+              Import from URL
+            </MenuItem>
+          </Menu>
         </Toolbar>
 
         {/* React Flow Editor */}
@@ -325,15 +591,21 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
         </Box>
       </Box>
 
-      {/* Right Sidebar - Node Properties */}
-      <NodeProperties
+      {/* Node Detail View (NDV) - Replaces NodeProperties */}
+      <NodeDetailView
+        open={!!selectedNode}
         selectedNode={selectedNode}
+        onClose={() => setSelectedNode(null)}
         onNodeUpdate={(nodeId, updates) => {
           setNodes((nodes) =>
             nodes.map((node) =>
               node.id === nodeId ? { ...node, ...updates } : node
             )
           );
+        }}
+        onExecuteNode={(nodeId) => {
+          console.log('[WorkflowEditor] Execute single node:', nodeId);
+          // TODO: Implement single node execution
         }}
       />
 
@@ -359,7 +631,8 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Node Configuration Dialog */}
+      {/* Remove old Node Configuration Dialog - now using NDV */}
+      {/*
       <Dialog
         open={showNodeConfig}
         onClose={() => setShowNodeConfig(false)}
@@ -383,6 +656,58 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = ({ workflowId }) => {
             />
           )}
         </DialogContent>
+      </Dialog>
+      */}
+
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+
+      {/* Import from URL Dialog */}
+      <Dialog
+        open={showImportUrlDialog}
+        onClose={() => !isImporting && setShowImportUrlDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Import Workflow from URL</DialogTitle>
+        <DialogContent>
+          {importError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {importError}
+            </Alert>
+          )}
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Workflow JSON URL"
+            type="url"
+            fullWidth
+            variant="outlined"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            placeholder="https://example.com/workflow.json"
+            disabled={isImporting}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowImportUrlDialog(false)} disabled={isImporting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleImportUrlSubmit} 
+            variant="contained" 
+            disabled={isImporting || !importUrl.trim()}
+          >
+            {isImporting ? 'Importing...' : 'Import'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"automation-platform/orchestrator-go/internal/activities"
-	"automation-platform/orchestrator-go/internal/database"
-	"automation-platform/orchestrator-go/internal/workflows"
+	"automation-marketplace/orchestrator-go/internal/activities"
+	"automation-marketplace/orchestrator-go/internal/database"
+	"automation-marketplace/orchestrator-go/internal/workflows"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"syscall"
 
-	"automation-platform/orchestrator-go/internal/database"
-	"automation-platform/orchestrator-go/internal/kafka"
-	"automation-platform/orchestrator-go/internal/server"
+	"automation-marketplace/orchestrator-go/internal/database"
+	"automation-marketplace/orchestrator-go/internal/kafka"
+	"automation-marketplace/orchestrator-go/internal/server"
 	"github.com/joho/godotenv"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"

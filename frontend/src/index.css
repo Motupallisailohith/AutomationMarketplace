@@ -1,167 +1,211 @@
-body {
+/* Import fonts first */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #F8FAFC;
+  background: #FAFAFA;
+  color: #18181B;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 #root {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Workflow editor specific styles */
-.react-flow__node {
-  border-radius: 12px;
-  font-family: 'Inter', sans-serif;
-}
-
-.react-flow__node-custom {
-  padding: 16px;
-  border-radius: 12px;
-  border: 2px solid #E2E8F0;
-  background: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease-in-out;
-}
-
-.react-flow__node-custom:hover {
-  border-color: #6366F1;
-  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2), 0 4px 6px -2px rgba(99, 102, 241, 0.1);
-  transform: translateY(-2px);
-}
-
-.react-flow__node-custom.selected {
-  border-color: #6366F1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
-.react-flow__edge-path {
-  stroke: #6366F1;
-  stroke-width: 2;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: #EC4899;
-  stroke-width: 3;
-}
-
-.react-flow__handle {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #6366F1;
-  border: 2px solid white;
-}
-
-.react-flow__handle:hover {
-  width: 12px;
-  height: 12px;
-}
-
-/* Monaco Editor theme adjustments */
-.monaco-editor .margin {
-  background-color: #f8f9fa !important;
-}
-
-/* Loading states */
-.loading-spinner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-/* Custom Scrollbar */
+/* n8n-style smooth scrollbars */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 5px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 5px;
+  background: #D1D5DB;
+  border-radius: 3px;
   transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #9CA3AF;
 }
 
-/* Glassmorphism effect */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* ReactFlow customization - n8n style */
+.react-flow {
+  background: #FAFAFA;
 }
 
-/* Gradient backgrounds */
-.gradient-primary {
-  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+.react-flow__node {
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.gradient-secondary {
-  background: linear-gradient(135deg, #EC4899 0%, #F43F5E 100%);
+.react-flow__node:hover {
+  transform: translateY(-1px);
 }
 
-.gradient-success {
-  background: linear-gradient(135deg, #10B981 0%, #14B8A6 100%);
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid white;
+  background: #9CA3AF;
+  transition: all 0.2s;
 }
 
-/* Animation utilities */
+.react-flow__handle:hover {
+  background: #7C3AED;
+  transform: scale(1.2);
+}
+
+.react-flow__handle-connecting {
+  background: #7C3AED;
+}
+
+.react-flow__edge-path {
+  stroke: #D1D5DB;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #7C3AED;
+  stroke-width: 2.5;
+}
+
+.react-flow__controls {
+  button {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-bottom: none;
+    color: #71717A;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #F9FAFB;
+      color: #18181B;
+    }
+
+    &:last-child {
+      border-bottom: 1px solid #E5E7EB;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    &:first-child {
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+  }
+}
+
+.react-flow__minimap {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+}
+
+/* n8n-style animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes pulse {
-  0%, 100% {
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
     opacity: 1;
   }
-  50% {
-    opacity: 0.5;
-  }
 }
 
-.pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* n8n-style button animations */
+.btn-hover-lift {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .react-flow__controls {
-    bottom: 60px;
-  }
-  
-  .workflow-sidebar {
-    width: 100%;
-    height: 300px;
-  }
+.btn-hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* n8n-style input focus */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* n8n-style tooltips */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  padding: 6px 12px;
+  background: #18181B;
+  color: white;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
 }

@@ -1,9 +1,10 @@
-module automation-platform/orchestrator-go
+module automation-marketplace/orchestrator-go
 
 go 1.21
 
 require (
 	github.com/IBM/sarama v1.41.3
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.4.0
 	github.com/joho/godotenv v1.5.1
@@ -41,6 +42,7 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect

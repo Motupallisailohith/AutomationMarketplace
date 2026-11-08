@@ -1,43 +1,54 @@
 {
-  "name": "automation-marketplace",
+  "name": "automation-marketplace-monorepo",
   "version": "1.0.0",
-  "description": "Modern workflow automation platform with event-driven architecture",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "api",
-    "orchestrator",
-    "workers/nodejs",
-    "messaging"
-  ],
+  "description": "Automation Marketplace - Modern workflow automation platform with multi-language workers",
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=20.19 <= 24.x",
+    "pnpm": ">=10.22.0"
+  },
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\" \"npm run dev:orchestrator\" \"npm run dev:workers\"",
-    "dev:api": "cd api && npm run dev",
-    "dev:frontend": "cd frontend && npm start",
-    "dev:orchestrator": "cd orchestrator && npm run dev",
-    "dev:workers": "cd workers/nodejs && npm run dev",
-    "build": "npm run build:frontend && npm run build:api && npm run build:orchestrator && npm run build:workers",
-    "build:frontend": "cd frontend && npm run build",
-    "build:api": "cd api && npm run build",
-    "build:orchestrator": "cd orchestrator && npm run build",
-    "build:workers": "cd workers/nodejs && npm run build",
-    "test": "npm run test:api && npm run test:frontend && npm run test:orchestrator",
-    "test:api": "cd api && npm test",
-    "test:frontend": "cd frontend && npm test",
-    "test:orchestrator": "cd orchestrator && npm test",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
-    "migrate": "cd db && npm run migrate",
-    "seed": "cd db && npm run seed"
+    "prepare": "node scripts/prepare.mjs || echo 'Prepare script not found'",
+    "build": "turbo run build",
+    "build:nodes": "tsx scripts/generate-nodes-json.ts",
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @automation-marketplace/api dev",
+    "dev:frontend": "pnpm --filter @automation-marketplace/frontend dev",
+    "dev:workers": "pnpm --filter './workers/*' dev --parallel",
+    "typecheck": "turbo typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "clean": "turbo run clean && rimraf node_modules",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "concurrently": "^8.2.0",
-    "@types/node": "^20.5.0",
-    "typescript": "^5.1.6"
+    "@types/node": "^20.17.50",
+    "cross-env": "^7.0.3",
+    "jest-expect-message": "^1.1.3",
+    "prettier": "^3.0.3",
+    "rimraf": "^5.0.1",
+    "turbo": "^2.5.4",
+    "typescript": "^5.9.2"
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+  "dependencies": {
+    "@codecov/vite-plugin": "^1.9.1",
+    "@sentry/vite-plugin": "^4.9.1",
+    "@vitejs/plugin-legacy": "^7.2.1",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "browserslist": "^4.28.1",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "sqlite3": "catalog:",
+    "unplugin-icons": "^23.0.1",
+    "unplugin-vue-components": "^31.0.0",
+    "vite-plugin-checker": "^0.12.0",
+    "vite-plugin-html": "^3.2.2",
+    "vite-plugin-istanbul": "^7.2.1",
+    "vite-plugin-node-polyfills": "^0.25.0",
+    "vite-plugin-static-copy": "^3.2.0",
+    "vite-svg-loader": "^5.1.0",
+    "vite-tsconfig-paths": "^6.1.1"
   }
 }

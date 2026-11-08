@@ -14,37 +14,28 @@ export default defineConfig({
       '@utils': path.resolve(__dirname, './src/utils'),
       '@types': path.resolve(__dirname, './src/types'),
       '@api': path.resolve(__dirname, './src/api'),
-      '@store': path.resolve(__dirname, './src/store'),
+      '@app': path.resolve(__dirname, './src/app'),
+      '@features': path.resolve(__dirname, './src/features'),
     }
   },
   server: {
-    port: 3000,
+    port: 5173,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+        secure: false,
       },
       '/health': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+        secure: false,
       }
     }
   },
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@mui/material', '@mui/icons-material'],
-          workflow: ['react-flow-renderer'],
-          editor: ['@monaco-editor/react'],
-        }
-      }
-    }
-  },
-  define: {
-    'process.env': process.env
   }
 })

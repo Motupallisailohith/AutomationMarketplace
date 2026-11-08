@@ -175,7 +175,7 @@ const Dashboard = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => navigate('/workflows/new')}
+          onClick={() => navigate('/workflow/new')}
           sx={{
             background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
             boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.4)',

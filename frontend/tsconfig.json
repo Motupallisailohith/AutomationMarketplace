@@ -28,6 +28,8 @@
       "@pages/*": ["./src/pages/*"],
       "@hooks/*": ["./src/hooks/*"],
       "@utils/*": ["./src/utils/*"],
+      "@app/*": ["./src/app/*"],
+      "@features/*": ["./src/features/*"],
       "@types/*": ["./src/types/*"],
       "@api/*": ["./src/api/*"],
       "@store/*": ["./src/store/*"]
@@ -35,6 +37,20 @@
 
     "types": ["vite/client", "node"]
   },
-  "include": ["src"],
+  "files": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/pages/Login.tsx",
+    "src/components/Canvas/WorkflowCanvas.tsx",
+    "src/components/Canvas/WorkflowNode.tsx",
+    "src/components/Canvas/NodeLibrary.tsx",
+    "src/components/Layout/WorkflowHeader.tsx",
+    "src/demo/researchProposalDemo.ts",
+    "src/api/client.ts",
+    "src/app/stores/index.ts",
+    "src/app/stores/hooks.ts",
+    "src/app/stores/userStore.ts",
+    "src/app/stores/slices/authSlice.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

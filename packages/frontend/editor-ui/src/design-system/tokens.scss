@@ -1,0 +1,138 @@
+// Design System Tokens
+// These map primitive colors to semantic meaning
+// Use these tokens in components, never use primitives directly
+
+@use './primitives' as *;
+
+@mixin tokens {
+  @include primitives;
+
+  // Primary brand color
+  --color--primary--shade-1: var(--color--blue-700);
+  --color--primary: var(--color--blue-600);
+  --color--primary--tint-1: var(--color--blue-300);
+  --color--primary--tint-2: var(--color--blue-150);
+  --color--primary--tint-3: var(--color--blue-50);
+
+  // Secondary brand color
+  --color--secondary--shade-1: var(--color--purple-700);
+  --color--secondary: var(--color--purple-600);
+  --color--secondary--tint-1: var(--color--purple-300);
+  --color--secondary--tint-2: var(--color--purple-200);
+
+  // Success states
+  --color--success--shade-1: var(--color--green-700);
+  --color--success: var(--color--green-600);
+  --color--success--tint-1: var(--color--green-300);
+  --color--success--tint-2: var(--color--green-200);
+  --color--success--tint-3: var(--color--green-100);
+  --color--success--tint-4: var(--color--green-50);
+
+  // Warning states
+  --color--warning--shade-1: var(--color--gold-500);
+  --color--warning: var(--color--gold-600);
+  --color--warning--tint-1: var(--color--gold-200);
+  --color--warning--tint-2: var(--color--gold-50);
+
+  // Danger/error states
+  --color--danger--shade-1: var(--color--red-700);
+  --color--danger: var(--color--red-600);
+  --color--danger--tint-1: var(--color--red-400);
+  --color--danger--tint-2: var(--color--red-300);
+  --color--danger--tint-3: var(--color--red-100);
+  --color--danger--tint-4: var(--color--red-50);
+
+  // Text colors
+  --color--text--shade-1: var(--color--neutral-850);
+  --color--text: var(--color--neutral-600);
+  --color--text--tint-1: var(--color--neutral-400);
+  --color--text--tint-2: var(--color--neutral-200);
+  --color--text--tint-3: var(--color--neutral-white);
+  --color--text--danger: var(--color--red-600);
+
+  // Foreground (borders, dividers)
+  --color--foreground--shade-2: var(--color--neutral-500);
+  --color--foreground--shade-1: var(--color--neutral-250);
+  --color--foreground: var(--color--neutral-200);
+  --color--foreground--tint-1: var(--color--neutral-150);
+  --color--foreground--tint-2: var(--color--neutral-white);
+
+  // Background colors
+  --color--background--shade-2: var(--color--neutral-950);
+  --color--background--shade-1: var(--color--neutral-200);
+  --color--background: var(--color--neutral-125);
+  --color--background--light-1: var(--color--neutral-100);
+  --color--background--light-2: var(--color--neutral-50);
+  --color--background--light-3: var(--color--neutral-white);
+
+  // Shadows
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  --shadow--dark: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.12);
+  --shadow--light: 0 2px 12px 0 rgba(0, 0, 0, 0.07);
+
+  // Border radius
+  --radius--xl: 12px;
+  --radius--lg: 8px;
+  --radius: 4px;
+  --radius--sm: 2px;
+
+  // Borders
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--color--foreground);
+  --border-color--light: var(--color--foreground--tint-1);
+  --border: var(--border-width) var(--border-style) var(--border-color);
+
+  // Canvas-specific tokens
+  --canvas--color--background: var(--color--neutral-125);
+  --canvas--dot--color: var(--color--neutral-500);
+  --canvas--read-only-line--color: var(--color--neutral-100);
+  --canvas--color--selected: var(--color--neutral-150);
+  --canvas--color--selected-transparent: hsla(220, 47%, 30%, 0.1);
+  --canvas--label--color: var(--color--neutral-600);
+  --canvas--label--color--background: oklch(from var(--canvas--color--background) l c h / 0.85);
+
+  // Node-specific tokens
+  --node--color--background: var(--color--background--light-3);
+  --node--color--background--executing: var(--color--primary--tint-3);
+  --node--border-color--pinned: var(--color--secondary);
+  --node--border-color--running: var(--color--primary);
+  --node--border-color--selected: var(--color--primary);
+  --node--type-main--color: var(--color--neutral-500);
+
+  // Sticky note colors
+  --sticky--color--background: var(--color--yellow-100);
+  --sticky--border-color: var(--color--yellow-200);
+  --sticky--color--text: var(--color--neutral-850);
+  --sticky--code--color--text: var(--color--secondary);
+  --sticky--code--color--background: var(--color--background);
+
+  --sticky--color--background--variant-1: var(--sticky--color--background);
+  --sticky--border-color--variant-1: var(--sticky--border-color);
+  --sticky--color--background--variant-2: var(--color--gold-100);
+  --sticky--border-color--variant-2: var(--color--gold-300);
+  --sticky--color--background--variant-3: var(--color--red-100);
+  --sticky--border-color--variant-3: var(--color--red-250);
+  --sticky--color--background--variant-4: var(--color--green-100);
+  --sticky--border-color--variant-4: var(--color--green-300);
+
+  // Spacing
+  --spacing--xs: 4px;
+  --spacing--sm: 8px;
+  --spacing--md: 16px;
+  --spacing--lg: 24px;
+  --spacing--xl: 32px;
+  --spacing--2xl: 48px;
+
+  // Z-index
+  --z-index--canvas: 1;
+  --z-index--node: 10;
+  --z-index--edge: 5;
+  --z-index--panel: 100;
+  --z-index--modal: 1000;
+  --z-index--tooltip: 2000;
+}
+
+:root {
+  @include tokens;
+}

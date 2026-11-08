@@ -1,68 +1,60 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import type { WorkflowDefinition, WorkflowExecution } from '../types/workflow';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import { api } from './client';
 
 export const workflowApi = {
   // Get all workflows
   getWorkflows: (): Promise<AxiosResponse<WorkflowDefinition[]>> =>
-    apiClient.get('/workflows'),
+    api.get('/workflows'),
 
   // Get single workflow
   getWorkflow: (id: string): Promise<AxiosResponse<WorkflowDefinition>> =>
-    apiClient.get(`/workflows/${id}`),
+    api.get(`/workflows/${id}`),
 
   // Create or update workflow
-  saveWorkflow: (workflow: WorkflowDefinition): Promise<AxiosResponse<WorkflowDefinition>> => {
-    if (workflow.id && workflow.id !== `workflow-${Date.now()}`) {
-      return apiClient.put(`/workflows/${workflow.id}`, workflow);
+  saveWorkflow: (workflow: any): Promise<AxiosResponse<any>> => {
+    // n8n format: send workflow data directly, not wrapped
+    const hasRealId = workflow.id && !workflow.id.startsWith('workflow-');
+    
+    console.log('📡 API saveWorkflow:', { hasRealId, workflowId: workflow.id });
+    
+    if (hasRealId) {
+      // Update existing workflow (PATCH)
+      return api.patch(`/workflows/${workflow.id}`, workflow);
     } else {
-      return apiClient.post('/workflows', workflow);
+      // Create new workflow (POST)
+      // Remove temporary ID if present
+      const { id, ...workflowData } = workflow;
+      return api.post('/workflows', workflowData);
     }
   },
 
   // Delete workflow
   deleteWorkflow: (id: string): Promise<AxiosResponse<void>> =>
-    apiClient.delete(`/workflows/${id}`),
+    api.delete(`/workflows/${id}`),
 
   // Execute workflow
   executeWorkflow: (
-    workflowId: string, 
+    workflowId: string,
     triggerData: any
   ): Promise<AxiosResponse<WorkflowExecution>> =>
-    apiClient.post(`/workflows/${workflowId}/execute`, { triggerData }),
+    api.post(`/workflows/${workflowId}/execute`, { triggerData }),
 
   // Get executions
   getExecutions: (workflowId?: string): Promise<AxiosResponse<WorkflowExecution[]>> => {
     const url = workflowId ? `/workflows/${workflowId}/executions` : '/executions';
-    return apiClient.get(url);
+    return api.get(url);
   },
 
   // Get single execution
   getExecution: (executionId: string): Promise<AxiosResponse<WorkflowExecution>> =>
-    apiClient.get(`/executions/${executionId}`),
+    api.get(`/executions/${executionId}`),
 
   // Stop execution
   stopExecution: (executionId: string): Promise<AxiosResponse<WorkflowExecution>> =>
-    apiClient.post(`/executions/${executionId}/stop`),
+    api.post(`/executions/${executionId}/stop`),
 
   // Get execution logs
   getExecutionLogs: (executionId: string): Promise<AxiosResponse<any[]>> =>
-    apiClient.get(`/executions/${executionId}/logs`),
+    api.get(`/executions/${executionId}/logs`),
 };

@@ -1,0 +1,24 @@
+# Build rebranded AutomationMarketplace UI
+FROM node:22-alpine AS builder
+
+WORKDIR /build
+
+# Copy editor-ui source
+COPY packages/frontend/editor-ui ./
+
+# Install dependencies directly with npm (simpler, no catalog issues)
+RUN npm install --legacy-peer-deps
+
+# Build frontend
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+ENV VUE_APP_PUBLIC_PATH="/"
+RUN npm run build
+
+# Production image - use n8n base and replace UI
+FROM n8nio/n8n:latest
+
+# Replace n8n's UI with rebranded AutomationMarketplace UI
+COPY --from=builder /build/dist /usr/local/lib/node_modules/n8n/dist/public
+
+EXPOSE 5678
+CMD ["n8n"]

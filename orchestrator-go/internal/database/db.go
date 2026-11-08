@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"automation-platform/orchestrator-go/internal/models"
+	"automation-marketplace/orchestrator-go/internal/models"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )

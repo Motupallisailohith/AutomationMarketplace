@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -7,9 +7,10 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider,
   Collapse,
   IconButton,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Http,
@@ -23,120 +24,87 @@ import {
   ExpandLess,
   ExpandMore,
   DragIndicator,
+  Extension,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchNodeTypes } from '../store/slices/nodeTypesSlice';
+import type { INodeTypeDescription } from '@automation-marketplace/nodes';
 
-interface NodeType {
-  type: string;
-  label: string;
-  icon: React.ReactNode;
-  description: string;
-  category: string;
-}
+// Map icon names to MUI icons
+const iconMap: Record<string, React.ReactNode> = {
+  Http: <Http />,
+  Transform: <Transform />,
+  Schedule: <Schedule />,
+  DataObject: <DataObject />,
+  SmartToy: <SmartToy />,
+  Storage: <Storage />,
+  Email: <Email />,
+  Webhook: <Webhook />,
+  Extension: <Extension />,
+};
+
+const getIconForNode = (node: INodeTypeDescription): React.ReactNode => {
+  // Try to get icon from node definition
+  if (node.icon && iconMap[node.icon]) {
+    return iconMap[node.icon];
+  }
+  // Default icon based on category
+  const category = node.group?.[0] || 'other';
+  if (category.includes('http') || category.includes('api')) return <Http />;
+  if (category.includes('data')) return <DataObject />;
+  if (category.includes('ai')) return <SmartToy />;
+  if (category.includes('database')) return <Storage />;
+  if (category.includes('communication')) return <Email />;
+  return <Extension />;
+};
 
 interface NodeCategory {
   name: string;
-  nodes: NodeType[];
+  nodes: INodeTypeDescription[];
 }
 
-const nodeCategories: NodeCategory[] = [
-  {
-    name: 'HTTP & APIs',
-    nodes: [
-      {
-        type: 'httpRequest',
-        label: 'HTTP Request',
-        icon: <Http />,
-        description: 'Make HTTP requests to external APIs',
-        category: 'http',
-      },
-      {
-        type: 'webhook',
-        label: 'Webhook',
-        icon: <Webhook />,
-        description: 'Receive HTTP webhooks',
-        category: 'http',
-      },
-    ],
-  },
-  {
-    name: 'Data Processing',
-    nodes: [
-      {
-        type: 'dataTransform',
-        label: 'Transform Data',
-        icon: <Transform />,
-        description: 'Transform and manipulate data',
-        category: 'data',
-      },
-      {
-        type: 'dataFilter',
-        label: 'Filter Data',
-        icon: <DataObject />,
-        description: 'Filter data based on conditions',
-        category: 'data',
-      },
-    ],
-  },
-  {
-    name: 'AI & ML',
-    nodes: [
-      {
-        type: 'aiInference',
-        label: 'AI Inference',
-        icon: <SmartToy />,
-        description: 'Run AI model inference',
-        category: 'ai',
-      },
-    ],
-  },
-  {
-    name: 'Database',
-    nodes: [
-      {
-        type: 'dbQuery',
-        label: 'Database Query',
-        icon: <Storage />,
-        description: 'Query database records',
-        category: 'database',
-      },
-    ],
-  },
-  {
-    name: 'Communication',
-    nodes: [
-      {
-        type: 'sendEmail',
-        label: 'Send Email',
-        icon: <Email />,
-        description: 'Send email notifications',
-        category: 'communication',
-      },
-    ],
-  },
-  {
-    name: 'Control Flow',
-    nodes: [
-      {
-        type: 'delay',
-        label: 'Delay',
-        icon: <Schedule />,
-        description: 'Add delay to workflow',
-        category: 'control',
-      },
-    ],
-  },
-];
+const groupNodesByCategory = (nodes: INodeTypeDescription[]): NodeCategory[] => {
+  const categoryMap = new Map<string, INodeTypeDescription[]>();
+  
+  nodes.forEach((node) => {
+    const category = node.group?.[0] || 'Other';
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, []);
+    }
+    categoryMap.get(category)!.push(node);
+  });
+
+  return Array.from(categoryMap.entries()).map(([name, nodes]) => ({
+    name,
+    nodes,
+  }));
+};
 
 interface NodePaletteProps {
   onNodeDragStart: (nodeType: string, nodeConfig: any) => void;
 }
 
 const NodePalette: React.FC<NodePaletteProps> = ({ onNodeDragStart }) => {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([
-    'HTTP & APIs',
-    'Data Processing',
-  ]);
+  const dispatch = useAppDispatch();
+  const { nodeTypes, loading, error, initialized } = useAppSelector((state) => state.nodeTypes);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!initialized) {
+      dispatch(fetchNodeTypes());
+    }
+  }, [dispatch, initialized]);
+
+  useEffect(() => {
+    // Auto-expand first category when nodes are loaded
+    if (nodeTypes.length > 0 && expandedCategories.length === 0) {
+      const categories = groupNodesByCategory(nodeTypes);
+      if (categories.length > 0) {
+        setExpandedCategories([categories[0].name]);
+      }
+    }
+  }, [nodeTypes, expandedCategories.length]);
 
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories(prev =>
@@ -146,20 +114,22 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onNodeDragStart }) => {
     );
   };
 
-  const handleDragStart = (event: React.DragEvent, nodeType: NodeType) => {
+  const handleDragStart = (event: React.DragEvent, node: INodeTypeDescription) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify({
-      type: nodeType.type,
-      label: nodeType.label,
-      category: nodeType.category,
+      type: node.name,
+      label: node.displayName,
+      category: node.group?.[0] || 'Other',
     }));
     event.dataTransfer.effectAllowed = 'move';
     
-    onNodeDragStart(nodeType.type, {
-      type: nodeType.type,
-      label: nodeType.label,
-      category: nodeType.category,
+    onNodeDragStart(node.name, {
+      type: node.name,
+      label: node.displayName,
+      category: node.group?.[0] || 'Other',
     });
   };
+
+  const nodeCategories = groupNodesByCategory(nodeTypes);
 
   return (
     <Paper
@@ -180,89 +150,116 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onNodeDragStart }) => {
         </Typography>
       </Box>
 
-      <List sx={{ p: 0 }}>
-        {nodeCategories.map((category) => (
-          <Box key={category.name}>
-            <ListItem
-              button
-              onClick={() => toggleCategory(category.name)}
-              sx={{
-                py: 1,
-                backgroundColor: 'grey.50',
-                borderBottom: 1,
-                borderColor: 'divider',
-              }}
-            >
-              <ListItemText
-                primary={category.name}
-                primaryTypographyProps={{
-                  variant: 'subtitle2',
-                  fontWeight: 'medium',
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress size={40} />
+        </Box>
+      )}
+
+      {error && (
+        <Box sx={{ p: 2 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      )}
+
+      {!loading && !error && nodeTypes.length === 0 && (
+        <Box sx={{ p: 3 }}>
+          <Alert severity="info">
+            <Typography variant="body2" fontWeight="medium" gutterBottom>
+              No nodes available
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Node implementations will be added in the next phase. The Node Registry is working correctly and ready to load nodes.
+            </Typography>
+          </Alert>
+        </Box>
+      )}
+
+      {!loading && !error && nodeTypes.length > 0 && (
+        <List sx={{ p: 0 }}>
+          {nodeCategories.map((category) => (
+            <Box key={category.name}>
+              <ListItem
+                button
+                onClick={() => toggleCategory(category.name)}
+                sx={{
+                  py: 1,
+                  backgroundColor: 'grey.50',
+                  borderBottom: 1,
+                  borderColor: 'divider',
                 }}
-              />
-              {expandedCategories.includes(category.name) ? (
-                <ExpandLess />
-              ) : (
-                <ExpandMore />
-              )}
-            </ListItem>
-            
-            <Collapse
-              in={expandedCategories.includes(category.name)}
-              timeout="auto"
-              unmountOnExit
-            >
-              <List component="div" disablePadding>
-                {category.nodes.map((node) => (
-                  <ListItem
-                    key={node.type}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, node)}
-                    sx={{
-                      pl: 3,
-                      cursor: 'grab',
-                      '&:hover': {
-                        backgroundColor: 'action.hover',
-                      },
-                      '&:active': {
-                        cursor: 'grabbing',
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 36 }}>
-                      {node.icon}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={node.label}
-                      secondary={node.description}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        fontWeight: 'medium',
-                      }}
-                      secondaryTypographyProps={{
-                        variant: 'caption',
-                        sx: { fontSize: '0.7rem' },
-                      }}
-                    />
-                    <IconButton
-                      size="small"
+              >
+                <ListItemText
+                  primary={category.name}
+                  primaryTypographyProps={{
+                    variant: 'subtitle2',
+                    fontWeight: 'medium',
+                  }}
+                />
+                {expandedCategories.includes(category.name) ? (
+                  <ExpandLess />
+                ) : (
+                  <ExpandMore />
+                )}
+              </ListItem>
+              
+              <Collapse
+                in={expandedCategories.includes(category.name)}
+                timeout="auto"
+                unmountOnExit
+              >
+                <List component="div" disablePadding>
+                  {category.nodes.map((node) => (
+                    <ListItem
+                      key={node.name}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, node)}
                       sx={{
-                        opacity: 0.5,
+                        pl: 3,
                         cursor: 'grab',
+                        '&:hover': {
+                          backgroundColor: 'action.hover',
+                        },
                         '&:active': {
                           cursor: 'grabbing',
                         },
                       }}
                     >
-                      <DragIndicator fontSize="small" />
-                    </IconButton>
-                  </ListItem>
-                ))}
-              </List>
-            </Collapse>
-          </Box>
-        ))}
-      </List>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        {getIconForNode(node)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={node.displayName}
+                        secondary={node.description}
+                        primaryTypographyProps={{
+                          variant: 'body2',
+                          fontWeight: 'medium',
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                          sx: { fontSize: '0.7rem' },
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          opacity: 0.5,
+                          cursor: 'grab',
+                          '&:active': {
+                            cursor: 'grabbing',
+                          },
+                        }}
+                      >
+                        <DragIndicator fontSize="small" />
+                      </IconButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            </Box>
+          ))}
+        </List>
+      )}
     </Paper>
   );
 };

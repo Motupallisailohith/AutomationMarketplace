@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { Client } from '@temporalio/client';
 import crypto from 'crypto';
-import { databaseService } from '../services/database';
+import { Container } from '@n8n/di';
+import { WorkflowService } from '../services/workflow.service.full';
 import { logger } from '../shared/logger';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 const temporalClient = new Client();
+const workflowService = Container.get(WorkflowService);
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
@@ -14,22 +16,33 @@ router.use(authMiddleware);
 // Get all workflows for authenticated user
 router.get('/', async (req, res) => {
   try {
-    const userId = (req as any).user.userId;
-    const workflows = await databaseService.getWorkflows(userId);
+    const user = (req as any).user; // Full user object from auth middleware
     
-    logger.info('Workflows retrieved', { userId, count: workflows.length });
+    if (!user || !user.id) {
+      res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const { workflows, count } = await workflowService.getMany(user);
+    
+    logger.info('Workflows retrieved', { userId: user.id, count });
     
     res.json({
       success: true,
       data: workflows.map(w => ({
         id: w.id,
         name: w.name,
-        description: w.description,
-        definition: w.definition,
-        isActive: w.is_active,
-        createdAt: w.created_at,
-        updatedAt: w.updated_at,
-        createdBy: w.created_by,
+        nodes: w.nodes,
+        connections: w.connections,
+        settings: w.settings,
+        active: w.active,
+        versionId: w.versionId,
+        createdAt: w.createdAt,
+        updatedAt: w.updatedAt,
+        tags: w.tags || [],
       })),
     });
   } catch (error: any) {
@@ -41,13 +54,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get specific workflow with triggers
+// Get specific workflow with executions
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.userId;
+    const userId = (req as any).user?.id || (req as any).user?.userId;
     
-    const workflow = await databaseService.getWorkflow(id);
+    const workflow = await workflowService.getWorkflow(id);
     
     if (!workflow) {
       res.status(404).json({
@@ -57,17 +70,11 @@ router.get('/:id', async (req, res) => {
       return;
     }
     
-    // Check if user owns the workflow or is admin
-    if (workflow.created_by !== userId && (req as any).user.role !== 'admin') {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
+    // Get executions for this workflow
+    const executions = await workflowService.getWorkflowExecutions(id, 10);
     
-    // Get triggers for this workflow
-    const triggers = await databaseService.getTriggers(id);
+    // Calculate checksum (n8n pattern)
+    const checksum = await workflowService.calculateChecksum(workflow);
     
     logger.info('Workflow retrieved', { workflowId: id, userId });
     
@@ -76,19 +83,16 @@ router.get('/:id', async (req, res) => {
       data: {
         id: workflow.id,
         name: workflow.name,
-        description: workflow.description,
-        definition: workflow.definition,
-        isActive: workflow.is_active,
-        createdAt: workflow.created_at,
-        updatedAt: workflow.updated_at,
-        createdBy: workflow.created_by,
-        triggers: triggers.map(t => ({
-          id: t.id,
-          type: t.type,
-          configuration: t.configuration,
-          isActive: t.is_active,
-          createdAt: t.created_at,
-        })),
+        nodes: workflow.nodes,
+        connections: workflow.connections,
+        settings: workflow.settings,
+        active: workflow.active,
+        versionId: workflow.versionId,
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
+        tags: workflow.tags || [],
+        recentExecutions: executions,
+        checksum,
       },
     });
   } catch (error: any) {
@@ -103,68 +107,62 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new workflow
+// Create new workflow (POST)
 router.post('/', async (req, res) => {
   try {
-    const userId = (req as any).user.userId;
-    const { name, description, definition, triggers = [] } = req.body;
+    const user = (req as any).user; // Full user object from auth middleware
+    const { name, description, nodes, connections, settings, tags } = req.body;
     
-    if (!name || !definition) {
+    if (!name) {
       res.status(400).json({
         success: false,
-        error: 'Name and definition are required'
+        error: 'Name is required'
       });
       return;
     }
     
-    const workflowId = crypto.randomUUID();
-    
-    // Create workflow
-    const workflow = await databaseService.createWorkflow({
-      id: workflowId,
-      name,
-      description,
-      definition,
-      createdBy: userId,
-    });
-    
-    // Create triggers if provided
-    const createdTriggers = [];
-    for (const trigger of triggers) {
-      const createdTrigger = await databaseService.createTrigger({
-        id: crypto.randomUUID(),
-        workflowId,
-        type: trigger.type,
-        configuration: trigger.configuration,
-        isActive: trigger.isActive ?? true,
+    if (!user || !user.id) {
+      res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
       });
-      createdTriggers.push(createdTrigger);
+      return;
     }
     
-    logger.info('Workflow created', { 
-      workflowId, 
-      userId, 
-      triggerCount: createdTriggers.length 
+    // Create workflow using the service with user association
+    const workflow = await workflowService.create(user, {
+      name,
+      nodes: nodes || [],
+      connections: connections || {},
+      settings: settings || { executionTimeout: 300, timezone: 'America/New_York' },
+      active: false,
+    }, {
+      tagIds: tags,
     });
     
+    // Calculate checksum (n8n pattern)
+    const checksum = await workflowService.calculateChecksum(workflow);
+    
+    logger.info('Workflow created', { 
+      workflowId: workflow.id, 
+      userId: user.id,
+      name: workflow.name
+    });
+
     res.status(201).json({
       success: true,
       data: {
         id: workflow.id,
         name: workflow.name,
-        description: workflow.description,
-        definition: workflow.definition,
-        isActive: workflow.is_active,
-        createdAt: workflow.created_at,
-        updatedAt: workflow.updated_at,
-        createdBy: workflow.created_by,
-        triggers: createdTriggers.map(t => ({
-          id: t.id,
-          type: t.type,
-          configuration: t.configuration,
-          isActive: t.is_active,
-          createdAt: t.created_at,
-        })),
+        nodes: workflow.nodes,
+        connections: workflow.connections,
+        settings: workflow.settings,
+        active: workflow.active,
+        versionId: workflow.versionId,
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
+        tags: workflow.tags || [],
+        checksum,
       },
       message: 'Workflow created successfully',
     });
@@ -177,15 +175,23 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update existing workflow
-router.put('/:id', async (req, res) => {
+// Update existing workflow (PATCH)
+router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.userId;
-    const { name, description, definition, isActive } = req.body;
+    const user = (req as any).user;
+    const { name, description, nodes, connections, settings, active, tags } = req.body;
     
-    // Check if workflow exists and user owns it
-    const existingWorkflow = await databaseService.getWorkflow(id);
+    if (!user || !user.id) {
+      res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+      return;
+    }
+    
+    // Check if workflow exists
+    const existingWorkflow = await workflowService.getWorkflow(id);
     if (!existingWorkflow) {
       res.status(404).json({
         success: false,
@@ -194,36 +200,38 @@ router.put('/:id', async (req, res) => {
       return;
     }
     
-    if (existingWorkflow.created_by !== userId && (req as any).user.role !== 'admin') {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
-    
-    // Update workflow
+    // Prepare updates
     const updates: any = {};
     if (name !== undefined) updates.name = name;
-    if (description !== undefined) updates.description = description;
-    if (definition !== undefined) updates.definition = JSON.stringify(definition);
-    if (isActive !== undefined) updates.is_active = isActive;
+    if (nodes !== undefined) updates.nodes = nodes;
+    if (connections !== undefined) updates.connections = connections;
+    if (settings !== undefined) updates.settings = settings;
+    if (active !== undefined) updates.active = active;
     
-    const workflow = await databaseService.updateWorkflow(id, updates);
+    // Update workflow using the service
+    const workflow = await workflowService.update(user, id, updates, {
+      tagIds: tags,
+    });
     
-    logger.info('Workflow updated', { workflowId: id, userId });
+    // Calculate checksum (n8n pattern)
+    const checksum = await workflowService.calculateChecksum(workflow);
+    
+    logger.info('Workflow updated', { workflowId: id, userId: user.id });
     
     res.json({
       success: true,
       data: {
         id: workflow.id,
         name: workflow.name,
-        description: workflow.description,
-        definition: workflow.definition,
-        isActive: workflow.is_active,
-        createdAt: workflow.created_at,
-        updatedAt: workflow.updated_at,
-        createdBy: workflow.created_by,
+        nodes: workflow.nodes,
+        connections: workflow.connections,
+        settings: workflow.settings,
+        active: workflow.active,
+        versionId: workflow.versionId,
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
+        tags: workflow.tags || [],
+        checksum,
       },
       message: 'Workflow updated successfully',
     });
@@ -239,15 +247,22 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Execute workflow
-router.post('/:id/execute', async (req, res) => {
+// Delete workflow
+router.delete('/:id', async (req, res) => {
   try {
-    const { id: workflowId } = req.params;
-    const userId = (req as any).user.userId;
-    const { triggerData = {}, triggerId } = req.body;
-
-    // Check if workflow exists and user has access
-    const workflow = await databaseService.getWorkflow(workflowId);
+    const { id } = req.params;
+    const user = (req as any).user;
+    
+    if (!user || !user.id) {
+      res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+      return;
+    }
+    
+    // Check if workflow exists
+    const workflow = await workflowService.getWorkflow(id);
     if (!workflow) {
       res.status(404).json({
         success: false,
@@ -256,15 +271,45 @@ router.post('/:id/execute', async (req, res) => {
       return;
     }
     
-    if (workflow.created_by !== userId && (req as any).user.role !== 'admin') {
-      res.status(403).json({
+    // Delete the workflow
+    await workflowService.delete(user, id);
+    
+    logger.info('Workflow deleted', { workflowId: id, userId: user.id });
+    
+    res.json({
+      success: true,
+      message: 'Workflow deleted successfully',
+    });
+  } catch (error: any) {
+    logger.error('Failed to delete workflow:', { 
+      workflowId: req.params.id, 
+      error: error?.message || error 
+    });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to delete workflow' 
+    });
+  }
+});
+
+// Execute workflow
+router.post('/:id/execute', async (req, res) => {
+  try {
+    const { id: workflowId } = req.params;
+    const userId = (req as any).user?.id || (req as any).user?.userId;
+    const { triggerData = {}, triggerId } = req.body;
+
+    // Check if workflow exists
+    const workflow = await workflowService.getWorkflow(workflowId);
+    if (!workflow) {
+      res.status(404).json({
         success: false,
-        error: 'Access denied'
+        error: 'Workflow not found'
       });
       return;
     }
     
-    if (!workflow.is_active) {
+    if (!workflow.active) {
       res.status(400).json({
         success: false,
         error: 'Workflow is not active'
@@ -276,15 +321,6 @@ router.post('/:id/execute', async (req, res) => {
     const executionId = crypto.randomUUID();
     const temporalRunId = `workflow-${workflowId}-${Date.now()}`;
 
-    // Create execution record
-    await databaseService.createExecution({
-      id: executionId,
-      workflowId,
-      triggerId,
-      temporalRunId,
-      inputData: triggerData,
-    });
-
     // Start Temporal workflow
     const handle = await temporalClient.workflow.start('workflowOrchestrator', {
       taskQueue: 'automation-task-queue',
@@ -293,7 +329,7 @@ router.post('/:id/execute', async (req, res) => {
         workflowId,
         executionId,
         triggerData,
-        definition: workflow.definition,
+        definition: { nodes: workflow.nodes, connections: workflow.connections },
         triggerId,
       }],
     });
@@ -333,11 +369,11 @@ router.post('/:id/execute', async (req, res) => {
 router.get('/:id/executions', async (req, res) => {
   try {
     const { id: workflowId } = req.params;
-    const userId = (req as any).user.userId;
+    const userId = (req as any).user?.id || (req as any).user?.userId;
     const limit = parseInt(req.query.limit as string) || 50;
     
-    // Check if workflow exists and user has access
-    const workflow = await databaseService.getWorkflow(workflowId);
+    // Check if workflow exists
+    const workflow = await workflowService.getWorkflow(workflowId);
     if (!workflow) {
       res.status(404).json({
         success: false,
@@ -346,30 +382,17 @@ router.get('/:id/executions', async (req, res) => {
       return;
     }
     
-    if (workflow.created_by !== userId && (req as any).user.role !== 'admin') {
-      res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
-      return;
-    }
-    
-    const executions = await databaseService.getExecutions(workflowId, limit);
+    const executions = await workflowService.getWorkflowExecutions(workflowId, limit);
     
     res.json({
       success: true,
       data: executions.map(e => ({
         id: e.id,
-        workflowId: e.workflow_id,
-        triggerId: e.trigger_id,
-        temporalRunId: e.temporal_run_id,
+        workflowId: e.workflowId,
         status: e.status,
-        inputData: e.input_data,
-        outputData: e.output_data,
-        errorMessage: e.error_message,
-        startedAt: e.started_at,
-        completedAt: e.completed_at,
-        durationMs: e.duration_ms,
+        startedAt: e.startedAt,
+        stoppedAt: e.stoppedAt,
+        mode: e.mode,
       })),
     });
   } catch (error: any) {

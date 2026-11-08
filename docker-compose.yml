@@ -78,7 +78,7 @@ services:
 
   # Temporal Web UI
   temporal-web:
-    image: temporalio/web:1.21.0
+    image: temporalio/ui:2.21.3
     depends_on:
       - temporal
     environment:

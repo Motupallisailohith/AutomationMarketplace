@@ -1,0 +1,38 @@
+{
+  "name": "@automation-marketplace/nodes",
+  "version": "0.1.0",
+  "description": "Node types and interfaces for AutomationMarketplace",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "automation",
+    "workflow",
+    "nodes"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/nodemailer": "^7.0.4",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
+    "@slack/web-api": "^7.13.0",
+    "axios": "^1.13.2",
+    "form-data": "^4.0.0",
+    "googleapis": "^169.0.0",
+    "ioredis": "^5.8.2",
+    "mysql2": "^3.16.0",
+    "nodemailer": "^7.0.12",
+    "openai": "^6.15.0",
+    "twilio": "^5.11.1"
+  }
+}

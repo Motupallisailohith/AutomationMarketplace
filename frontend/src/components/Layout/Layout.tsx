@@ -17,6 +17,8 @@ import {
   Chip,
   Tooltip,
   Badge,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,8 +31,12 @@ import {
   Search as SearchIcon,
   Add as AddIcon,
   Close as CloseIcon,
+  Logout as LogoutIcon,
+  ViewModule as TemplatesIcon,
+  Code as VariablesIcon,
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useUserStore } from '@app/stores/userStore';
 
 interface LayoutProps {
   children: ReactNode;
@@ -38,18 +44,99 @@ interface LayoutProps {
 
 const DRAWER_WIDTH = 280;
 
+// UserProfile Component
+const UserProfileSection = () => {
+  const { user, logout } = useUserStore();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleClose();
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  if (!user) return null;
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        onClick={handleClick}
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          backgroundColor: 'grey.50',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          '&:hover': {
+            backgroundColor: 'grey.100',
+          },
+        }}
+      >
+        <Avatar
+          sx={{
+            width: 36,
+            height: 36,
+            background: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+          }}
+        >
+          {getInitials(user.name || user.email)}
+        </Avatar>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="body2" fontWeight={600} noWrap>
+            {user.name || 'User'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {user.email}
+          </Typography>
+        </Box>
+      </Stack>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        <MenuItem onClick={handleLogout}>
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Logout</ListItemText>
+        </MenuItem>
+      </Menu>
+    </Box>
+  );
+};
+
 const Layout = ({ children }: LayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const menuItems = [
-    { 
-      text: 'Dashboard', 
-      icon: <DashboardIcon />, 
-      path: '/',
-      badge: null,
-    },
     { 
       text: 'Workflows', 
       icon: <WorkflowsIcon />, 
@@ -60,12 +147,24 @@ const Layout = ({ children }: LayoutProps) => {
       text: 'Executions', 
       icon: <HistoryIcon />, 
       path: '/executions',
-      badge: 3,
+      badge: null,
     },
     { 
       text: 'Credentials', 
       icon: <CredentialsIcon />, 
       path: '/credentials',
+      badge: null,
+    },
+    { 
+      text: 'Templates', 
+      icon: <TemplatesIcon />, 
+      path: '/templates',
+      badge: null,
+    },
+    { 
+      text: 'Variables', 
+      icon: <VariablesIcon />, 
+      path: '/variables',
       badge: null,
     },
     { 
@@ -172,43 +271,7 @@ const Layout = ({ children }: LayoutProps) => {
       <Divider />
 
       {/* User Profile Section */}
-      <Box sx={{ p: 2 }}>
-        <Stack
-          direction="row"
-          spacing={2}
-          alignItems="center"
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            backgroundColor: 'grey.50',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            '&:hover': {
-              backgroundColor: 'grey.100',
-            },
-          }}
-        >
-          <Avatar
-            sx={{
-              width: 36,
-              height: 36,
-              background: 'linear-gradient(135deg, #EC4899 0%, #F43F5E 100%)',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-            }}
-          >
-            JD
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="body2" fontWeight={600} noWrap>
-              John Doe
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
-              john@example.com
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
+      <UserProfileSection />
     </Box>
   );
 
@@ -271,7 +334,7 @@ const Layout = ({ children }: LayoutProps) => {
                     backgroundColor: 'primary.dark',
                   },
                 }}
-                onClick={() => navigate('/workflows/new')}
+                onClick={() => navigate('/workflow/new')}
               >
                 <AddIcon />
               </IconButton>

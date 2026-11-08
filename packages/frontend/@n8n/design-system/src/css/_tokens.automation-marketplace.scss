@@ -1,0 +1,221 @@
+@use 'sass:math';
+
+/**
+ * Automation Marketplace Custom Theme
+ * 
+ * Custom color tokens mapped to Automation Marketplace branding:
+ * - Primary: Indigo (#6366F1)
+ * - Secondary: Pink (#EC4899) 
+ * - Success: Emerald Green (#10B981)
+ * - Warning: Amber (#F59E0B)
+ * - Danger: Red (#EF4444)
+ */
+
+@mixin theme {
+	/* Primary color HSL values for Indigo */
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--h: 231;
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--s: 91%;
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--l: 68%;
+
+	// Primary tokens - Indigo
+
+	// Primary
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--shade-1: var(--color-primary-shade-1, var(--color--orange-400));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary: var(--color-primary, var(--color--orange-300));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--tint-1: var(--color-primary-tint-1, var(--color--orange-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--tint-2: var(--color-primary-tint-2, var(--color--orange-150));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--primary--tint-3: var(--color-primary-tint-3, var(--color--orange-50));
+
+	// Secondary - Pink
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--secondary--shade-1: var(--color-secondary-shade-1, var(--color--purple-700));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--secondary: var(--color-secondary, var(--color--purple-600));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--secondary--tint-1: var(--color-secondary-tint-1, var(--color--purple-300));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--secondary--tint-2: var(--color-secondary-tint-3, var(--color--purple-200));
+
+	// Success - Emerald Green
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success--shade-1: var(--color-success-shade-1, var(--color--green-700));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success: var(--color-success, var(--color--green-600));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success--tint-1: var(--color-success-light, var(--color--green-300));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success--tint-2: var(--color-success-light-2, var(--color--green-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success--tint-3: var(--color-success-tint-1, var(--color--green-100));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--success--tint-4: var(--color-success-tint-2, var(--color--green-50));
+
+	// Warning - Amber
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--warning--shade-1: var(--color-warning-shade-1, var(--color--gold-500));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--warning: var(--color-warning, var(--color--gold-600));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--warning--tint-1: var(--color-warning-tint-1, var(--color--gold-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--warning--tint-2: var(--color-warning-tint-2, var(--color--gold-50));
+
+	// Danger - Red
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger--shade-1: var(--color-danger-shade-1, var(--color--red-700));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger: var(--color-danger, var(--color--red-600));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger--tint-1: var(--color-danger-light, var(--color--red-400));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger--tint-2: var(--color-danger-light-2, var(--color--red-300));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger--tint-3: var(--color-danger-tint-1, var(--color--red-100));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--danger--tint-4: var(--color-danger-tint-2, var(--color--red-50));
+
+	// Text - Slate grays
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text--shade-1: var(--color-text-dark, var(--color--neutral-850));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text: var(--color-text-base, var(--color--neutral-600));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text--tint-1: var(--color-text-light, var(--color--neutral-400));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text--tint-2: var(--color-text-lighter, var(--color--neutral-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text--tint-3: var(--color-text-xlight, var(--color--neutral-white));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--text--danger: var(--color-text-danger, var(--color--red-600));
+
+	// Foreground
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--foreground--shade-2: var(--color-foreground-xdark, var(--color--neutral-500));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--foreground--shade-1: var(--color-foreground-dark, var(--color--neutral-250));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--foreground: var(--color-foreground-base, var(--color--neutral-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--foreground--tint-1: var(--color-foreground-light, var(--color--neutral-150));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--foreground--tint-2: var(--color-foreground-xlight, var(--color--neutral-white));
+
+	// Background
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background--shade-2: var(--color-background-dark, var(--color--neutral-950));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background--shade-1: var(--color-background-medium, var(--color--neutral-200));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background: var(--color-background-base, var(--color--neutral-125));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background--light-1: var(--color-background-light-base, var(--color--neutral-100));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background--light-2: var(--color-background-light, var(--color--neutral-50));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--background--light-3: var(--color-background-xlight, var(--color--neutral-white));
+
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--shadow: var(--box-shadow-base, 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06));
+	--shadow--dark: var(
+		/* stylelint-disable-next-line @n8n/css-var-naming */ --box-shadow-dark,
+		0 4px 6px -1px rgba(0, 0, 0, 0.1),
+		0 2px 4px -1px rgba(0, 0, 0, 0.06)
+	);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--shadow--light: var(--box-shadow-light, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05));
+
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--radius--xl: var(--border-radius-xlarge, 16px);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--radius--lg: var(--border-radius-large, 12px);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--radius: var(--border-radius-base, 8px);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--radius--sm: var(--border-radius-small, 6px);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--border-color: var(--border-color-base, var(--color--foreground));
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--border-color--light: var(--border-color-light, var(--color--foreground--tint-1));
+
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--border-style: var(--border-style-base, solid);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--border-width: var(--border-width-base, 1px);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--border: var(--border-base, var(--border-width) var(--border-style) var(--color--foreground));
+
+	// Secondary tokens
+
+	// Canvas
+	--canvas--color--background: var(--color--neutral-50);
+	--canvas--dot--color: var(--color--neutral-300);
+	--canvas--read-only-line--color: var(--color--neutral-150);
+	--canvas--color--selected: var(--color--neutral-150);
+	--canvas--color--selected-transparent: hsla(231, 91%, 68%, 0.1);
+	--canvas--label--color: var(--color--neutral-600);
+	--canvas--label--color--background: oklch(from var(--canvas--color--background) l c h / 0.85);
+
+	// Nodes
+	--node--color--background: var(--color--background--light-3);
+	--node--color--background--executing: var(--color--primary--tint-3);
+	--node--color--background--executing-1: var(--color--primary--tint-3);
+	--node--border-color--pinned: var(--color--secondary);
+	--node--border-color--running: var(--color--primary);
+	--node--type-main--color: var(--color--neutral-500);
+
+	// Sticky
+	--sticky--color--background: var(--color--yellow-100);
+	--sticky--border-color: var(--color--yellow-200);
+	--sticky--color--text: var(--color--neutral-850);
+	--sticky--code--color--text: var(--color--secondary);
+	--sticky--code--color--background: var(--color--background);
+
+	--sticky--color--background--variant-1: var(--sticky--color--background);
+	--sticky--border-color--variant-1: var(--sticky--border-color);
+	--sticky--color--background--variant-2: var(--color--gold-100);
+	--sticky--border-color--variant-2: var(--color--gold-300);
+	--sticky--color--background--variant-3: var(--color--red-100);
+	--sticky--border-color--variant-3: var(--color--red-250);
+	--sticky--color--background--variant-4: var(--color--green-100);
+	--sticky--border-color--variant-4: var(--color--green-300);
+	--sticky--color--background--variant-5: var(--color--blue-100);
+	--sticky--border-color--variant-5: var(--color--blue-300);
+	--sticky--color--background--variant-6: var(--color--purple-100);
+	--sticky--border-color--variant-6: var(--color--purple-200);
+	--sticky--color--background--variant-7: var(--color--teal-100);
+	--sticky--border-color--variant-7: var(--color--teal-300);
+
+	// Info - Blue accent
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--info: var(--color--blue-500);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--info--tint-1: var(--color--blue-300);
+	/* stylelint-disable-next-line @n8n/css-var-naming */
+	--color--info--tint-2: var(--color--blue-100);
+
+	// Additional design tokens for modern look
+	--transition--default: all 0.2s ease-in-out;
+	--transition--fast: all 0.15s ease-in-out;
+	--transition--slow: all 0.3s ease-in-out;
+
+	// Typography
+	--font--family--primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	--font--family--heading: 'Space Grotesk', var(--font--family--primary);
+	--font--family--code: 'Menlo', 'Monaco', 'Courier New', monospace;
+
+	// Spacing scale (compatible with existing n8n spacing)
+	--spacing--xs: 4px;
+	--spacing--sm: 8px;
+	--spacing--md: 16px;
+	--spacing--lg: 24px;
+	--spacing--xl: 32px;
+	--spacing--2xl: 48px;
+}

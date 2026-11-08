@@ -1,0 +1,7 @@
+{
+	"scripts": {
+		"dev:automation-marketplace": "cross-env VUE_APP_URL_BASE_API=http://localhost:3001 vite --host 0.0.0.0 --port 8080 dev --mode automation-marketplace",
+		"build:automation-marketplace": "cross-env VUE_APP_PUBLIC_PATH=\"/\" NODE_OPTIONS=\"--max-old-space-size=8192\" vite build --mode automation-marketplace",
+		"serve:automation-marketplace": "cross-env VUE_APP_URL_BASE_API=http://localhost:3001 vite --host 0.0.0.0 --port 8080 dev --mode automation-marketplace"
+	}
+}
